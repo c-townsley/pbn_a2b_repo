@@ -1,0 +1,757 @@
+---
+title: "CPLN505 Assignment II - Assessing Water Infrastructure Need"
+author: "Oliver Atwood & Charlie Townsley"
+date: "2023-03-01"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    theme: flatly
+    highlight: kate
+    code_folding: hide
+    code_download: true
+
+---
+
+# Part I: Comparing Groups and Testing for Association and Correlation
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+#knitr::opts_knit$set(root.dir = "C:/Users/ctown/Box/PBN_Assignment_2/Data") # for Charlie
+knitr::opts_knit$set(root.dir = "/Users/oliveratwood/Box Sync/CPLN 5050 - Planning by Numbers/Assignments/PBN_Assignment_2/Data") # for Oliver
+rm(list=ls())
+```
+
+```{r packages data and colors, warning = FALSE, message = FALSE}
+#install packages
+#only run once
+#install.packages("tidyverse")
+#install.packages("dplyr")
+#install.packages("gt")
+#install.packages("ggplot2")
+#install.packages("reshape2")
+#install.packages("scales")
+#install.packages("gmodels")
+#install.packages("DT")
+
+#run every session
+library(tidyverse)
+library(dplyr)
+library(gt)
+library(ggplot2)
+library(reshape2)
+library(scales)
+library(gmodels)
+library(DT)
+
+#set colors
+palette <- c("#a02300", "#0059c7", "#6496b4", "#E1B93C")
+#red and gold are accent
+#blue is chart
+#dark blue is outline
+
+cwns2012 <- read_csv("cwns2012.csv")
+```
+
+
+## Memo
+
+**To:** Mayor Kenney  
+**From:** Oliver Atwood and Charlie Townsley, O+C Analytics  
+**Subject:** The Water Crisis in Philadelphia  
+
+Hey Mayor Kenney, we know you're a busy man, but we've got something important to say! We've got a real problem on our hands, and it's not just about the potholes in the streets or the trash in the alleys. It's about the water.
+
+Using the magic of computers, our team conducted a statistical analysis of national wastewater treatment facility data, and we found that Philadelphia is in desperate need of some serious investment in our water treatment infrastructure. We're talking about \$1.29 billion, Mayor, over $400 million more than the national average! That's a lot of cash.
+
+Now, I know what you're thinking. "Why should I care about this?" Well, let me tell you, Mayor. Without clean water, we've got nothing. No coffee, no beer, no nothing! And that's just the beginning. A lack of investment in water infrastructure can lead to serious health risks, economic losses, and environmental degradation. We’re talking *sewage in the rivers*, Mayor!
+
+We've found that the level of investment needed is correlated with many other values nationally, including population density, low median income, and high projected changes in population density and number of residential households receiving treatment.  Another correlation we unearthed was one of investment need with use of a combined sewer system. Remember that sewage in the rivers I mentioned earlier? Well, if you’re using a combined sewer and it rains, even a little bit, bam! Sewage in the rivers.
+
+Now our analysis has truly been world class, but we need to dig deeper, Mayor. We need to figure out exactly what's going on in our city and come up with a plan to fix it. That's why we're requesting an additional round of research funding to look into this matter further. Specifically, we would like to further explore the relationships between need combined sewer systems, and systems that contribute to highly polluted water bodies. We need to understand the unique challenges we're facing and come up with a solution before it's too late.
+
+So, Mayor Kenney, we’re counting on you to take this seriously. We need to invest in our water infrastructure if we want to have a healthy, thriving city. Let's get to work.
+
+Sincerely,
+
+Oliver Atwood and Charlie Townsley
+O+C Analytics
+
+
+# Part I.I: Create Metrics to Contextualize Reported Need
+
+We generated the below metrics to measure potential drivers of reported need.
+```{r add resilience metrics}
+cwns2012 <- cwns2012 %>% 
+  mutate(proj_change_res_rec_collctn = PROJ_RES_REC_COLLCTN - PRES_RES_REC_COLLCTN) %>% 
+  mutate(proj_prcntchng_res_rec_collctn = (proj_change_res_rec_collctn / PRES_RES_REC_COLLCTN)*100) %>% 
+  mutate(proj_change_res_rec_trmt = PROJ_RES_REC_TRMT - PRES_RES_REC_TRMT) %>% 
+  mutate(proj_prcntchng_res_rec_trmt = (proj_change_res_rec_trmt / PRES_RES_REC_TRMT)*100) %>% 
+  mutate(proj_chng_n_res_rec_collctn = PROJ_N_RES_REC_COLLCTN - PRES_N_RES_REC_COLLCTN) %>% 
+  mutate(proj_prcntchng_n_res_rec_collctn = (proj_chng_n_res_rec_collctn / PRES_N_RES_REC_COLLCTN)*100) %>% 
+  mutate(proj_chng_n_res_rec_trmt = PROJ_N_RES_REC_TRMT - PRES_N_RES_REC_TRTM) %>% 
+  mutate(proj_prcntchng_n_res_rec_trmt = (proj_chng_n_res_rec_trmt / PRES_N_RES_REC_TRTM)*100) %>% 
+  mutate(res_pop10_dens = (POP10/(ALAND + AWATER))*1e+6) %>% 
+  mutate(res_pop00_dens = (POP00/(ALAND + AWATER))*1e+6) %>%
+  mutate(res_pop90_dens = (POP90/(ALAND + AWATER))*1e+6) %>%
+  mutate(res_pop80_dens = (POP80/(ALAND + AWATER))*1e+6) %>% 
+  mutate(res_pop_dens_chng_80_10 = (res_pop10_dens - res_pop80_dens)) %>% 
+  mutate(res_pop_dens_prcnt_chng_80_10 = (res_pop_dens_chng_80_10 / res_pop80_dens)*100) %>%
+  mutate(medinc_prcnt_chng_69_09 = ((MEDINC09 - MEDINC69)/MEDINC69)*100)
+  
+#r clear Nans and Inf values
+cwns2012[sapply(cwns2012, is.nan)] <- 0
+cwns2012[sapply(cwns2012, is.infinite)] <- 0
+
+#Interactive Summary Table of Resilience Measures by EPA Region
+cwns2012 %>% 
+  select(TOTAL_OFFICIAL_NEED, EPA_REGION, proj_change_res_rec_collctn, proj_prcntchng_res_rec_collctn, 
+         proj_change_res_rec_trmt, proj_prcntchng_res_rec_trmt, proj_chng_n_res_rec_collctn, 
+         proj_prcntchng_n_res_rec_collctn, proj_chng_n_res_rec_trmt, proj_prcntchng_n_res_rec_trmt,
+         res_pop10_dens, res_pop10_dens, res_pop00_dens, res_pop90_dens, res_pop80_dens, 
+         res_pop_dens_chng_80_10, medinc_prcnt_chng_69_09) %>% 
+  DT::datatable(., options = list(scrollX = TRUE))
+```
+  
+
+# Part I.II: Summary Statistics of the Data
+
+## Resilience Metrics
+
+
+**Projected Change in Residential Population Receiving Collection** 
+```{r residential population receiving collection}
+summary(cwns2012$proj_change_res_rec_collctn)
+```
+
+
+**Projected Percent Change in Residential Population Receiving Collection**
+```{r % residential population receiving collection}
+summary(cwns2012$proj_prcntchng_res_rec_collctn)
+```
+
+
+**Projected Change in Residential Population Receiving Treatment**
+```{r residential population receiving treatment}
+summary(cwns2012$proj_change_res_rec_trmt)
+```
+
+
+**Projected Percent Change in Residential Population Receiving Treatment**
+```{r % change in residential population receiving treatment}
+summary(cwns2012$proj_prcntchng_res_rec_trmt)
+```
+
+
+**Projected Change in Non-Residential Population Receiving Collection**
+```{r non-residential population receiving collection}
+summary(cwns2012$proj_chng_n_res_rec_collctn)
+```
+
+
+**Projected Percent Change in Non-Residential Population Receiving Collection**
+```{r % non-residential population receiving collection}
+summary(cwns2012$proj_prcntchng_n_res_rec_collctn)
+```
+
+
+**Projected Change in Non-Residential Population Receiving Treatment**
+```{r non-residential population receiving treatment}
+summary(cwns2012$proj_chng_n_res_rec_trmt)
+```
+
+
+**Projected Percent Change in Non-Residential Population Receiving Treatment**
+```{r % non-residential population receiving treatment}
+summary(cwns2012$proj_prcntchng_n_res_rec_trmt)
+```
+
+
+**Residential Population Density 2010** 
+*units are persons per kilometer^2^*
+```{r Residential population density 2010}
+summary(cwns2012$res_pop10_dens)
+```
+
+
+**Change in Population Density 1980 - 2010**
+```{r change in res pop density 1980 - 2010}
+summary(cwns2012$res_pop_dens_chng_80_10)
+```
+
+
+**Percent Change in Population Density 1980 - 2010**
+```{r percent change in res pop density 1980 - 2010}
+summary(cwns2012$res_pop_dens_prcnt_chng_80_10)
+```
+
+
+**Percent Change in Median Income 1969 - 2009**
+```{r median income 1969 - 2009}
+summary(cwns2012$medinc_prcnt_chng_69_09)
+```
+
+## Summary Tables
+
+Tables and figures that describe the trends we see in the data, beginning with the top and bottom 10 facilities with the greatest and least need for water infrastructure.
+```{r top ten by need}
+
+#Create a new dataframe with the top ten facilities by need
+need_top10 <- cwns2012 %>% 
+  arrange(desc(TOTAL_OFFICIAL_NEED)) %>% 
+  filter(TOTAL_OFFICIAL_NEED != 0) %>% 
+  slice(1:10)
+
+#Create a table with the top ten facilities by need and geography
+need_top10 %>% 
+  select(TOTAL_OFFICIAL_NEED, FACILITY_CITY, COUNTYNAME, STATE, EPA_REGION) %>% 
+  gt() %>% 
+  tab_header(title = "Top Ten Facilities by Need") %>% 
+  fmt_currency(columns = c(TOTAL_OFFICIAL_NEED), currency = "USD")
+
+```
+
+
+
+```{r bottom ten by need}
+
+#Create a new dataframe with the bottom ten facilities by need
+need_bot10 <- cwns2012 %>% 
+  arrange(TOTAL_OFFICIAL_NEED) %>% 
+  filter(TOTAL_OFFICIAL_NEED != 0) %>% 
+  slice(1:10)
+
+#Create a table with the bottom ten facilities by need and geography
+need_bot10 %>% 
+  select(TOTAL_OFFICIAL_NEED, FACILITY_CITY, COUNTYNAME, STATE, EPA_REGION) %>% 
+  gt() %>% 
+  tab_header(title = "Bottom Ten Facilities by Need") %>% 
+  fmt_currency(columns = c(TOTAL_OFFICIAL_NEED), currency = "USD")
+
+```
+
+
+**Mean Total Official Need**
+```{r mean total need}
+total_need_mean <- mean(cwns2012$TOTAL_OFFICIAL_NEED)
+total_need_mean
+```
+
+
+**Mean Official Need in Philadelphia**
+```{r Philadelphia mean official need}
+philly_facilities <- cwns2012 %>% 
+  filter(STATE == "PA", FACILITY_CITY == "PHILADELPHIA")
+
+need_philly_mean <- mean(philly_facilities$TOTAL_OFFICIAL_NEED)
+
+need_philly_mean
+```
+
+
+**Total Official Need in Philadelphia**
+```{r Philadelphia total official need}
+need_philly_total <- sum(philly_facilities$TOTAL_OFFICIAL_NEED)
+
+need_philly_total
+```
+
+
+**Difference between Mean Official Need in Philadelphia and National Mean Total Official Need**  
+Mean budgeted need of Philadelphia facilities is $407,713,550 higher than mean total official need.
+```{r mean philly need less mean national need}
+need_philly_mean - total_need_mean
+```
+
+
+**Calculate additional means of density and median income**  
+```{r calculate mean density and median income for philadelphia}
+density_philly_mean <- mean(philly_facilities$res_pop10_dens)
+medincome_philly_mean <- mean(philly_facilities$MEDINC09)
+print('Mean Philadelphia Density')
+density_philly_mean
+print('Mean Philadelphia Median Income')
+medincome_philly_mean
+```
+
+
+
+
+**Test distribution of log-adjusted Total Official Need**  
+*Mean of all facilities in gold*  
+*Mean of Philly facilities in red*
+```{r Need Histogram}
+cwns2012 <- cwns2012 %>% 
+  mutate(log_TOTAL_NEED = ifelse(TOTAL_OFFICIAL_NEED > 0, log(TOTAL_OFFICIAL_NEED), TOTAL_OFFICIAL_NEED))
+
+ggplot(cwns2012, aes(x=log_TOTAL_NEED)) +
+  geom_histogram(color="#0059c7", size=.1, fill="#6496b4", binwidth=.5, alpha=0.8) +
+  geom_vline(aes(xintercept=mean(log_TOTAL_NEED)), color="#E1B93C") +
+  geom_vline(aes(xintercept=mean(log(philly_facilities$TOTAL_OFFICIAL_NEED))), color="#a02300") +
+  theme_linedraw()
+
+```
+
+
+**Test distribution of Median Income**  
+*Mean of all facilities in gold*  
+*Mean of Philly facilities in red*
+```{r Income Density Curve}
+cwns2012%>%
+  ggplot(aes(x=MEANINC09)) +
+  ggtitle("Median Income Distribution") +
+  xlab("Distribution of Median Income (2009)") + ylab("Median Income") +
+  geom_density(fill="#6496b4", size=.35, color="#0059c7", alpha=0.8) +
+  geom_vline(aes(xintercept=mean(MEANINC09)), color="#E1B93C") +
+  geom_vline(aes(xintercept=mean(philly_facilities$MEANINC09)), color="#a02300") +
+  theme_linedraw()
+
+```
+
+
+## EPA Regions by Resilience Measures
+
+```{r plot of need vs mean density by epa region}
+#Summarize total need and group by EPA region
+mean_density_need_epa <- cwns2012 %>%
+  group_by(EPA_REGION) %>% 
+  summarise(count = n(), mean_popdens = mean(res_pop10_dens), mean_need = mean(TOTAL_OFFICIAL_NEED))
+
+ggplot(mean_density_need_epa, aes(x = mean_popdens, y = mean_need)) +
+  geom_smooth(method=lm, color="#0059c7") +
+  geom_point(size=3, color="black", fill="#6496b4", shape=21, alpha=.5) +
+  ggtitle("Population Density vs. Total Need, by EPA Region") +
+  geom_text(aes(label = rownames(mean_density_need_epa), hjust = 1.75, vjust = 1)) +
+  xlab("Mean Population Density (2010)") + ylab("Mean Official Need") +
+  theme_linedraw()
+  
+```
+
+Density and need seem to be correlated. So how does the mean need of Philadelphia facilities compare with the mean values for each EPA region?
+
+Here is the same plot with Philadelphia shown as a red dot.
+```{r plot of need vs mean density by epa region plus philadelphia point, message=FALSE}
+mean_density_need_epa <- cwns2012 %>%
+  group_by(EPA_REGION) %>% 
+  summarise(count = n(), mean_popdens = mean(res_pop10_dens), mean_need = mean(TOTAL_OFFICIAL_NEED))
+
+ggplot(mean_density_need_epa, aes(x = mean_popdens, y = mean_need)) +
+  geom_smooth(method=lm, color="#0059c7") + 
+  geom_point(size=3, color="black", fill="#6496b4", shape=21, alpha=.5) +
+  ggtitle("Population Density vs. Total Need, by EPA Region") +
+  geom_text(aes(label = rownames(mean_density_need_epa), hjust = 1.75, vjust = 1)) +
+  xlab("Mean Population Density (2010)") + ylab("Mean Official Need") +
+  geom_point(aes(x = density_philly_mean , y = need_philly_mean),size=3, shape=21,color="black", fill="#a02300") +
+  theme_linedraw()
+
+```
+
+
+How does Philly's density and need compare to other cities in the same EPA region?
+```{r plot of need vs mean density in epa region 3}
+#Summarize total need in EPA region 3
+mean_density_need_R3 <- cwns2012 %>%
+  filter(EPA_REGION == '3') %>% 
+  group_by(FACILITY_CITY) %>% 
+  summarise(count = n(), mean_popdens = mean(res_pop10_dens), mean_need = mean(TOTAL_OFFICIAL_NEED))
+
+ggplot(mean_density_need_R3, aes(x = mean_popdens, y = mean_need)) +
+  geom_point(size=3, color="black", fill="#6496b4", shape=21, alpha=.5) +
+  ggtitle("Population Density vs. Total Need by City in EPA Region 3") +
+  xlab("Mean Population Density (2010)") + ylab("Mean Official Need") +
+  geom_point(aes(x = density_philly_mean , y = need_philly_mean),size=3, shape=21,color="black", fill="#a02300") +
+  theme_linedraw()
+
+```
+
+
+What about income and need in the same EPA region?
+```{r plot of need vs median income in epa region 3}
+#Summarize total need in EPA region 3
+mean_income_need_R3 <- cwns2012 %>%
+  filter(EPA_REGION == '3') %>% 
+  group_by(FACILITY_CITY) %>% 
+  summarise(count = n(), mean_medinc = mean(MEDINC09), mean_need = mean(TOTAL_OFFICIAL_NEED))
+
+ggplot(mean_income_need_R3, aes(x = mean_medinc, y = mean_need)) +
+  geom_point(size=3, color="black", fill="#6496b4", shape=21, alpha=.5) +
+  ggtitle("Median Income vs. Total Need by City in EPA Region 3") +
+  xlab("Median Income (2009)") + ylab("Mean Official Need") +
+  geom_point(aes(x = medincome_philly_mean , y = need_philly_mean),size=3, shape=21,color="black", fill="#a02300") +
+  theme_linedraw()
+
+```
+
+
+
+
+# Part I.III: Tests of Association
+
+## Comparing Budgeted Need for Facilities with CSS vs MS4s
+
+
+Summary of overall budgeted need for facilities with CSS (Combined Sewer Systems):
+```{r css need}
+cwns2012_css <- filter(cwns2012, CSS == 1)
+summary(cwns2012_css$TOTAL_OFFICIAL_NEED)
+```
+
+
+Summary of overall budgeted need for facilities with MS4s (Municipal Separate Storm Sewer Systems):
+```{r ms4 need}
+cwns2012_ms4 <- filter(cwns2012, MS4 == 1)
+summary(cwns2012_ms4$TOTAL_OFFICIAL_NEED)
+```
+
+
+
+
+We can see that mean budgeted need for facilities with CSS is higher than for facilities with MS4s, but is this difference statistically meaningful?
+
+Conducting a Welch two-sample t-test reveals that these means are significantly different from each other.
+
+It gives a t-statistic that is greater than the critical value for significance of 1.96 and allows us reject the null hypothesis that the mean budgeted need is the same for CSS and MS4s with greater than 95% confidence.
+```{r two-sample t-test css vs ms4}
+t.test(TOTAL_OFFICIAL_NEED ~ CSS, data = cwns2012, paired = FALSE)
+```
+
+
+
+
+## Comparing Need by Association with a Total Maximum Daily Load (TMDL) of one or more pollutants
+
+
+Budgeted need for facilities that contribute to a TMDL receiving water body:
+```{r yes tmdl}
+cwns_yestmdl <- filter(cwns2012, TMDL_INDICATOR == "Y")
+summary(cwns_yestmdl$TOTAL_OFFICIAL_NEED)
+```
+
+
+Budgeted need for facilities that do not contribute to a TMDL receiving water body:
+```{r no tmdl}
+cwns_notmdl <- filter(cwns2012, TMDL_INDICATOR == "N")
+summary(cwns_notmdl$TOTAL_OFFICIAL_NEED)
+```
+
+
+Mean budgeted need for facilities that do contribute to a TMDL is higher than for facilities that do not.
+
+Running a Welch two sample t-test shows that mean budgeted need is statistically different between facilities that do and do not contribute to a TMDL.
+
+It gives a t-statistic that surpasses the critical value for significance of 1.96 and allows us reject the null hypothesis that the means are the same with greater than 95% confidence.
+```{r two-sample t-test tmdl}
+t.test(TOTAL_OFFICIAL_NEED ~ TMDL_INDICATOR, data = cwns2012, paired = FALSE)
+```
+
+
+
+
+## Comparing Significance of Difference between Facilities with and without TMDL by EPA Region
+
+We found a statistically significant difference in mean budgeted need between facilities that do contribute to a TMDL and those that do not in just four out of ten EPA Regions. These were regions 2, 3, 5, and 6.
+
+Because we could not reject the null hypothesis (that means are different) in 60% of EPA regions, we do not see TMDL by EPA region as a useful metric for further exploration.
+
+
+**Region 2**
+```{r two-sample t-test tmdl for epa region 2}
+t.test(TOTAL_OFFICIAL_NEED ~ TMDL_INDICATOR, data = filter(cwns2012, EPA_REGION == 2), paired = FALSE)
+```
+
+
+**Region 3**
+```{r two-sample t-test tmdl for epa region 3}
+t.test(TOTAL_OFFICIAL_NEED ~ TMDL_INDICATOR, data = filter(cwns2012, EPA_REGION == 3), paired = FALSE)
+```
+
+
+**Region 5**
+```{r two-sample t-test tmdl for epa region 5}
+t.test(TOTAL_OFFICIAL_NEED ~ TMDL_INDICATOR, data = filter(cwns2012, EPA_REGION == 5), paired = FALSE)
+```
+
+
+**Region 6**
+```{r two-sample t-test tmdl for epa region 6}
+t.test(TOTAL_OFFICIAL_NEED ~ TMDL_INDICATOR, data = filter(cwns2012, EPA_REGION == 6), paired = FALSE)
+```
+
+We found no statistically significant difference (failed to reject the null hypothesis) in mean budgeted need between facilities that do contribute to a TMDL and those that do not in regions 1, 4, 9, and 10.
+
+
+**Region 1**
+```{r two-sample t-test tmdl for epa region 1}
+t.test(TOTAL_OFFICIAL_NEED ~ TMDL_INDICATOR, data = filter(cwns2012, EPA_REGION == 1), paired = FALSE)
+```
+
+
+**Region 4**
+```{r two-sample t-test tmdl for epa region 4}
+t.test(TOTAL_OFFICIAL_NEED ~ TMDL_INDICATOR, data = filter(cwns2012, EPA_REGION == 4), paired = FALSE)
+```
+
+
+**Region 9**
+```{r two-sample t-test tmdl for epa region 9}
+t.test(TOTAL_OFFICIAL_NEED ~ TMDL_INDICATOR, data = filter(cwns2012, EPA_REGION == 9), paired = FALSE)
+```
+
+
+**Region 10**
+```{r two-sample t-test tmdl for epa region 10}
+t.test(TOTAL_OFFICIAL_NEED ~ TMDL_INDICATOR, data = filter(cwns2012, EPA_REGION == 10), paired = FALSE)
+```
+
+
+**Regions 7 and 8**  
+Regions 7 and 8 both failed the t-test outright because there was not enough data.
+```{r two-sample t-test tmdl for epa region 7 and 8, error=TRUE}
+# t.test(TOTAL_OFFICIAL_NEED ~ TMDL_INDICATOR, data = filter(cwns2012, EPA_REGION == 7), paired = FALSE)
+
+# t.test(TOTAL_OFFICIAL_NEED ~ TMDL_INDICATOR, data = filter(cwns2012, EPA_REGION == 8), paired = FALSE)
+```
+
+
+
+
+## Chi-square Test of Regional Differences in Total Official Need
+
+To test for association between total budgeted need and EPA region, we first need to divide total need into a limited number of categories that a cross table can process.
+```{r breaking total offical need into 6 classes}
+#First create a new column that breaks total official need into six classes
+cwns_int <- cwns2012 %>%
+  mutate(need_int = ntile(cwns2012$TOTAL_OFFICIAL_NEED, 5)) %>% 
+  dplyr::select(need_int, TOTAL_OFFICIAL_NEED)
+```
+
+Chi-Square test of association between need and EPA region shows that we can confidently reject the null hypothesis that need and epa region are independent variables due to the incredibly small p-value.
+```{r cross table of total official need by epa region}
+CrossTable(cwns2012$EPA_REGION, cwns_int$need_int,  fisher = FALSE, chisq = TRUE, 
+             expected = TRUE, sresid = FALSE, format="SPSS")
+```
+
+
+
+
+## Testing 5 Variables for Association
+
+Below are five variables from those we originally explored, divided into five equal intervals and tested for their association with total reported need.
+
+
+**2010 residential population density is associated with total official need.**
+```{r cross table of association between total official need and variable 1}
+#First create a new column that breaks res_pop10_dens into distinct classes
+#1 is low and 5 is high
+cwns_int <- cwns_int %>%
+  mutate(res_pop10_dens = ntile(cwns2012$res_pop10_dens, 5))
+
+#cross tab of res_pop10_dens and need
+CrossTable(cwns_int$need_int, cwns_int$res_pop10_dens,  fisher = FALSE, chisq = TRUE, 
+             expected = TRUE, sresid = FALSE, format="SPSS")
+```
+
+
+**Residential population density change from 1980 - 2010 is associated with total official need.**
+```{r cross table of association between total official need and res pop dens chng 1980 - 2010}
+#First create a new column that breaks res_pop10_dens into six classes
+cwns_int <- cwns_int %>%
+  mutate(res_pop_dens_chng_80_10 = ntile(cwns2012$res_pop_dens_chng_80_10, 5))
+
+#cross tab of res_pop10_dens and need
+CrossTable(cwns_int$need_int, cwns_int$res_pop_dens_chng_80_10,  fisher = FALSE, chisq = TRUE, 
+             expected = TRUE, sresid = FALSE, format="SPSS")
+```
+
+
+**2010 population size is associated with total official need.**
+```{r cross table of association between need and pop10}
+#First create a new column that breaks res_pop10_dens into six classes
+cwns_int <- cwns_int %>%
+  mutate(POP10 = ntile(cwns2012$POP10, 5))
+
+#cross tab of res_pop10_dens and need
+CrossTable(cwns_int$need_int, cwns_int$POP10,  fisher = FALSE, chisq = TRUE, 
+             expected = TRUE, sresid = FALSE, format="SPSS")
+```
+
+
+**Projected change in residential receiving treatment is associated with total official need.**
+```{r cross table of association between need and proj_change_res_rec_trmt}
+#First create a new column that breaks res_pop10_dens into six classes
+cwns_int <- cwns_int %>%
+  mutate(proj_change_res_rec_trmt = ntile(cwns2012$proj_change_res_rec_trmt, 5))
+
+#cross tab of res_pop10_dens and need
+CrossTable(cwns_int$need_int, cwns_int$proj_change_res_rec_trmt,  fisher = FALSE, chisq = TRUE, 
+             expected = TRUE, sresid = FALSE, format="SPSS")
+```
+
+
+**Projected change in residential receiving collection is associated with total official need.**
+```{r cross table of association between need and proj_change_res_rec_collctn}
+#First create a new column that breaks the variable into six classes
+cwns_int <- cwns_int %>%
+  mutate(proj_change_res_rec_collctn = ntile(cwns2012$proj_change_res_rec_collctn, 5))
+
+#cross tab of var5 and need
+CrossTable(cwns_int$need_int, cwns_int$proj_change_res_rec_collctn,  fisher = FALSE, chisq = TRUE, 
+             expected = TRUE, sresid = FALSE, format="SPSS")
+```
+
+
+
+
+# Part I.IV: Correlation
+
+Correlation tests were run for all the resilience measures, as well as for 2010 population, 2010 population density, and 2009 median income. Values with insignificant correlation with total official need were commented out of the code.
+
+### Correlation of Variables of Interest with Total Official Need
+
+A number of variables exhibited no significant correlation with total official need at all. Expand the code block to see them.
+```{r insignificant Correlation Coefficient Tests}
+#cor(cwns2012$medinc_prcnt_chng_69_09, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+#cor(cwns2012$res_pop_dens_prcnt_chng_80_10, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+#cor(cwns2012$proj_prcntchng_res_rec_trmt, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+#cor(cwns2012$proj_prcntchng_res_rec_collctn, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+#cor(cwns2012$proj_prcntchng_n_res_rec_trmt, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+#cor(cwns2012$proj_prcntchng_n_res_rec_collctn, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+#cor(cwns2012$MEDINC09, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+```
+
+
+Similarly, median income seems to have an extremely weak correlation with need based on its correlation coefficient.
+```{r correlation medinc09}
+cor(cwns2012$MEDINC09, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+```
+Projected change in non-residential population recieving collection has a slight correlation with need.
+```{r correlation proj chng n res rec collctn}
+cor(cwns2012$proj_chng_n_res_rec_collctn, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+```
+Projected change in non-residential population recieving treatment has nearly the same slight correlation.
+```{r correlation proj chng res rec trtmt}
+cor(cwns2012$proj_chng_n_res_rec_trmt, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+```
+2010 population is in the same category of slight correlation.
+```{r correlation pop10}
+cor(cwns2012$POP10, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+```
+
+Projected change in residential population receiving collection has a more notable correlation with need, although it is still small.
+```{r correlation proj chng res rec collctn}
+cor(cwns2012$proj_change_res_rec_collctn, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+```
+Projected change in residential population receiving treatment has a very similar notable but small correlation.
+```{r correlation proj chng res rec trmt}
+cor(cwns2012$proj_change_res_rec_trmt, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+```
+Change in residential population density from 1980 to 2010 has a moderate correlation with need that is notably higher than the above variables.
+```{r correlation res pop dens chng}
+cor(cwns2012$res_pop_dens_chng_80_10, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+```
+Although residential population density in 2010 still exhibits a moderate correlation with need overall, it's correlation coefficient is significantly higer than the rest of the variables we tested.
+```{r correlation res pop10 dens}
+cor(cwns2012$res_pop10_dens, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+```
+
+
+
+
+## Scatter Plots
+
+For the 8 values where correlation was found, log-adjusted scatter plots were generated.
+```{r Scatter Plot res pop dens Change 1980 - 2010 by Need}
+
+ggplot(cwns2012, aes(x=log(res_pop_dens_chng_80_10), y=log(TOTAL_OFFICIAL_NEED))) + 
+  ggtitle("Residential Population Density Change by Official Need") +
+  xlab("Log-Adjusted Residential Population Density Change (1980 - 2010)") + ylab("Log-Adjusted Official Need") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5) +
+  geom_smooth(method=lm, color="#0059c7") +
+  theme_linedraw()
+
+```
+```{r Scatter Plot proj chng in res pop rec trtmnt by Need}
+
+ggplot(cwns2012, aes(x=log(proj_change_res_rec_trmt), y=log(TOTAL_OFFICIAL_NEED))) + 
+  ggtitle("Projected Change in Res. Population Receiving Treatment by Official Need") +
+  xlab("Log-Adjusted Projected Change in Residential Population Receiving Treatment") + ylab("Log-Adjusted Official Need") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5)+
+  geom_smooth(method=lm, color="#0059c7") +
+  theme_linedraw()
+
+```
+```{r Scatter Plot of proj chng in res pop rec collctn by Need}
+
+ggplot(cwns2012, aes(x=log(proj_change_res_rec_collctn), y=log(TOTAL_OFFICIAL_NEED))) + 
+  ggtitle("Projected Change in Res. Population Receiving Collection by Official Need") +
+  xlab("Log-Adjusted Projected Change in Residential Population Receiving Collection") + ylab("Log-Adjusted Official Need") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5)+
+  geom_smooth(method=lm, color="#0059c7") +
+  theme_linedraw()
+
+```
+```{r Scatter Plot of proj chng in n-res pop rec trtmnt by Need}
+
+ggplot(cwns2012, aes(x=log(proj_chng_n_res_rec_trmt), y=log(TOTAL_OFFICIAL_NEED))) + 
+  ggtitle("Projected Change in Non-Res. Population Receiving Treatment by Official Need") +
+  xlab("Log-Adjusted Projected Change in Non-Residential Population Receiving Treatment") + ylab("Log-Adjusted Official Need") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5)+
+  geom_smooth(method=lm, color="#0059c7") +
+  theme_linedraw()
+
+```
+```{r Scatter Plot of proj chng in N-res pop rec collctn by Need}
+
+ggplot(cwns2012, aes(x=log(proj_chng_n_res_rec_collctn), y=log(TOTAL_OFFICIAL_NEED))) + 
+  ggtitle("Projected Change in Non-Res. Population Receiving Collection by Official Need") +
+  xlab("Log-Adjusted Projected Change in Non-Residential Population Receiving Collection") + ylab("Log-Adjusted Official Need") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5)+
+  geom_smooth(method=lm, color="#0059c7") +
+  theme_linedraw()
+
+```
+```{r Scatter Plot of res pop dens 2010 by Need}
+
+ggplot(cwns2012, aes(x=log(res_pop10_dens), y=log(TOTAL_OFFICIAL_NEED))) + 
+  ggtitle("Residential Population Density (2010) by Official Need") +
+  xlab("Log-Adjusted Residential Population Density in 2010") + ylab("Log-Adjusted Official Need") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5)+
+  geom_smooth(method=lm, color="#0059c7") +
+  theme_linedraw()
+
+```
+```{r Scatter Plot of Residential pop 2010 by Need}
+
+ggplot(cwns2012, aes(x=log(POP10), y=log(TOTAL_OFFICIAL_NEED))) + 
+  ggtitle("Residential Population (2010) by Official Need") +
+  xlab("Log-Adjusted Residential Population (2010)") + ylab("Log-Adjusted Official Need") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5)+
+  geom_smooth(method=lm, color="#0059c7") +
+  theme_linedraw()
+
+```
+```{r Scatter Plot of med Income in 2009 by Need}
+
+ggplot(cwns2012, aes(x=log(POP10), y=log(TOTAL_OFFICIAL_NEED))) + 
+  ggtitle("Median Income (2009) by Official Need") +
+  xlab("Log-Adjusted Median Income (2009)") + ylab("Log-Adjusted Official Need") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5)+
+  geom_smooth(method=lm, color="#0059c7") +
+  theme_linedraw()
+
+```
+
+# Part 2B
+
+Multivariate Regression
+
+```{r}
+model1<-lm (TOTAL_OFFICIAL_NEED ~ res_pop10_dens, data = cwns2012)
+summary(model1)
+```
+
+```{r}
+model2<-lm (TOTAL_OFFICIAL_NEED ~ res_pop10_dens + POP10 + res_pop_dens_chng_80_10, data = cwns2012)
+summary(model2)
+```
