@@ -776,7 +776,12 @@ cwns2012 <- cwns2012 %>%
   
 ```
 
+```{r Dummy variable for growing cities and densifying cities}
 
+cwns2012 <- cwns2012 %>% 
+  mutate(GrowingCity = ifelse(POP10-POP80) > 0, log(TOTAL_OFFICIAL_NEED), 0) %>%   ******OLIVER
+  mutate(DensifyingCity= )
+```
 
 ### Calculate the Transformations of Potential Explanatory Variables
 
@@ -815,6 +820,9 @@ MEDINC09
 ResBurden
 LogResBurden
 LogOfficialNeed
+CSS
+'growing cities'
+
 
 ## Bivariate Regressions
 *Do we need this section now?*
