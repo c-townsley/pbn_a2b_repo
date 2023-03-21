@@ -18,8 +18,6 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
-#knitr::opts_knit$set(root.dir = "C:/Users/ctown/Box/PBN_Assignment_2/Data") # for Charlie
-knitr::opts_knit$set(root.dir = "/Users/oliveratwood/Box Sync/CPLN 5050 - Planning by Numbers/Assignments/PBN_Assignment_2/Data") # for Oliver
 rm(list=ls())
 ```
 
@@ -51,7 +49,7 @@ palette <- c("#a02300", "#0059c7", "#6496b4", "#E1B93C")
 #blue is chart
 #dark blue is outline
 
-cwns2012 <- read_csv("cwns2012.csv")
+cwns2012 <- read_csv("https://raw.githubusercontent.com/c-townsley/pbn_a2b_repo/main/Data/cwns2012.csv?token=GHSAT0AAAAAACAEJN5DRTWOHJRNE36CS67GZAZCUFQ")
 ```
 
 
@@ -77,6 +75,10 @@ Sincerely,
 
 Oliver Atwood and Charlie Townsley
 O+C Analytics
+
+*Update your conclusion to the report to Mayor Kenney summarizing your findings. What additional variables would be helpful to include? What are the major implications of your findings?*
+
+*Highlight conclusion updates*
 
 
 # Part I.I: Create Metrics to Contextualize Reported Need
@@ -744,7 +746,66 @@ ggplot(cwns2012, aes(x=log(POP10), y=log(TOTAL_OFFICIAL_NEED))) +
 
 # Part 2B
 
-Multivariate Regression
+## Data Preparation and Preliminary Tests
+
+### Create Variables to Represent Need
+
+Suspecting that Philadelphia’s high infrastructure need can be operationalized in different ways, you create the following variables to represent ‘need’:
+• Total Official Need ($, untransformed)
+• Log of Total Official Need (log $) 
+• Residential Burden ($/person) 
+• Log of Residential Burden (log $/person)
+
+Give an explanation for why you choose to operationalize ‘need’ in the above ways (what each can reveal, and the interpretations of coefficients from regression change). Boxplots and density/histograms of these variables can help illustrate very skewed distributions.
+
+Hint: Be careful of dividing by zeros in communities that have either reported zero residential treatment or zero residential collection values. You can assume that most residents that receive treatment also receive collection and vice versa, but that non-standard reported has resulted in some inconsistency in the data. To deal with this while avoiding double counting, try something like:
+
+```{r dat example 1}
+dat$resburden<- dat$TOTAL_OFFICIAL_NEED/max(dat$PROJ_RES_REC_COLLCTN, dat$PROJ_RES_REC_TRMT) 
+```
+
+
+### Calculate the Transformations of Potential Explanatory Variables
+
+logs of Median Income variables
+
+logs of Population variables
+
+Dummy variables for ‘groups’ such as ‘growing cities’ or ‘cities with non-residential populations’
+
+You could also try to incorporate dummy variables for any other categorizations you think would explain facilities’ systematically higher or lower reported needs. Remember: dummy variables are essentially intercept adjustments in a regression that are based on the entire group having a higher/lower mean than non-group facilities. From what you found from your previous scope (i.e. any significant associations or correlations you found in Part I. of the assignment), you may also wish to include some of the change and percent change metrics you calculated to explain ‘need’. Explain theoretical reasons why you want to include certain variables in your regressions.
+
+
+### Pairwise Correlations
+
+Run pairwise correlations between variables that you may want to include in your regression to make sure to avoid multicollinearity, or included highly correlated variables in the regressions.
+
+## Bivariate Regressions
+*Do we need this section now?*
+
+Run bivariate regressions of explanatory variables against your ‘need variables.’ Make scatterplots
+showing the linear relationships between them (convention is to put the independent variable on
+the x-axis and the dependent variable, ‘need’ in this case, on the y-axis). Interpret the coefficient
+estimates of significant variables. How well do these simple bivariate models perform in
+predicting the various measures of ‘need’?
+
+
+## Multivariate Regression
+
+Build multivariate regressions for each of the measures of ‘need’. Explain the use of, and report
+the results of automated variable selection techniques, such as Forward and Backward Selection.
+
+In your final models for each of the measures of ‘need’, report which variables you chose to
+include in your final “leanest and meanest” models, interpret the significant coefficients of the
+final models. Make sure that you interpret interesting results in full sentences, as well as
+presenting regression results in a table summarizing your work. Compare models against each
+other, using R squared values and F-tests.
+
+Remember to take care in interpreting log-transformed variables.
+Try interactions between variables. Do any have significant effects?
+Report the VIF values to convince suspicious readers that you have considered the problem of
+multicollinearity in your analysis.
+
 
 ```{r}
 model1<-lm (TOTAL_OFFICIAL_NEED ~ res_pop10_dens, data = cwns2012)
