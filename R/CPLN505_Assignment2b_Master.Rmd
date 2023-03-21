@@ -757,7 +757,7 @@ Suspecting that Philadelphia’s high infrastructure need can be operationalized
 
 Give an explanation for why you choose to operationalize ‘need’ in the above ways (what each can reveal, and the interpretations of coefficients from regression change). Boxplots and density/histograms of these variables can help illustrate very skewed distributions.
 
-Hint: Be careful of dividing by zeros in communities that have either reported zero residential treatment or zero residential collection values. You can assume that most residents that receive treatment also receive collection and vice versa, but that non-standard reported has resulted in some inconsistency in the data. To deal with this while avoiding double counting, try something like:
+*Hint: Be careful of dividing by zeros in communities that have either reported zero residential treatment or zero residential collection values. You can assume that most residents that receive treatment also receive collection and vice versa, but that non-standard reported has resulted in some inconsistency in the data. To deal with this while avoiding double counting, try something like:*
 
 ```{r dat example 1}
 #dat$resburden<- dat$TOTAL_OFFICIAL_NEED/max(dat$PROJ_RES_REC_COLLCTN, dat$PROJ_RES_REC_TRMT) 
@@ -786,6 +786,8 @@ Run pairwise correlations between variables that you may want to include in your
 ```{r correlation medinc09}
 cor(cwns2012$res_pop10_dens, cwns2012$CSS, use="complete.obs", method="pearson")
 ```
+
+Include correlation matrix? - Charlie to do
 
 ## Bivariate Regressions
 *Do we need this section now?*
