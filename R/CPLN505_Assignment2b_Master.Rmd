@@ -760,8 +760,12 @@ Give an explanation for why you choose to operationalize ‘need’ in the above
 Hint: Be careful of dividing by zeros in communities that have either reported zero residential treatment or zero residential collection values. You can assume that most residents that receive treatment also receive collection and vice versa, but that non-standard reported has resulted in some inconsistency in the data. To deal with this while avoiding double counting, try something like:
 
 ```{r dat example 1}
-dat$resburden<- dat$TOTAL_OFFICIAL_NEED/max(dat$PROJ_RES_REC_COLLCTN, dat$PROJ_RES_REC_TRMT) 
+#dat$resburden<- dat$TOTAL_OFFICIAL_NEED/max(dat$PROJ_RES_REC_COLLCTN, dat$PROJ_RES_REC_TRMT) 
 ```
+
+mutate -
+add field for residential burden (need/ppl)
+add field for shortfall (res rec collectn - res_pop)
 
 
 ### Calculate the Transformations of Potential Explanatory Variables
@@ -778,6 +782,10 @@ You could also try to incorporate dummy variables for any other categorizations 
 ### Pairwise Correlations
 
 Run pairwise correlations between variables that you may want to include in your regression to make sure to avoid multicollinearity, or included highly correlated variables in the regressions.
+
+```{r correlation medinc09}
+cor(cwns2012$res_pop10_dens, cwns2012$CSS, use="complete.obs", method="pearson")
+```
 
 ## Bivariate Regressions
 *Do we need this section now?*
@@ -807,7 +815,7 @@ multicollinearity in your analysis.
 
 
 ```{r}
-model1<-lm (TOTAL_OFFICIAL_NEED ~ res_pop10_dens, data = cwns2012)
+model1<-lm (TOTAL_OFFICIAL_NEED ~ res_pop10_dens + CSS + MEDINC09, data = cwns2012)
 summary(model1)
 ```
 
