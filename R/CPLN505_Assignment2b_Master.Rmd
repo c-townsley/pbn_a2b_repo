@@ -31,6 +31,8 @@ rm(list=ls())
 #install.packages("scales")
 #install.packages("gmodels")
 #install.packages("DT")
+install.packages("corrplot")
+install.packages("Hmisc")
 
 #run every session
 library(tidyverse)
@@ -41,6 +43,8 @@ library(reshape2)
 library(scales)
 library(gmodels)
 library(DT)
+library(corrplot)
+library(Hmisc)
 
 #set colors
 palette <- c("#a02300", "#0059c7", "#6496b4", "#E1B93C")
@@ -657,8 +661,6 @@ cor(cwns2012$res_pop10_dens, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", m
 ```
 
 
-
-
 ## Scatter Plots
 
 For the 8 values where correlation was found, log-adjusted scatter plots were generated.
@@ -759,13 +761,21 @@ Give an explanation for why you choose to operationalize ‘need’ in the above
 
 *Hint: Be careful of dividing by zeros in communities that have either reported zero residential treatment or zero residential collection values. You can assume that most residents that receive treatment also receive collection and vice versa, but that non-standard reported has resulted in some inconsistency in the data. To deal with this while avoiding double counting, try something like:*
 
-```{r dat example 1}
-#dat$resburden<- dat$TOTAL_OFFICIAL_NEED/max(dat$PROJ_RES_REC_COLLCTN, dat$PROJ_RES_REC_TRMT) 
+```{r Calculate Residential Burden and Log of Residential Burden}
+
+cwns2012 <- cwns2012 %>% 
+  mutate(ResBurden = TOTAL_OFFICIAL_NEED/max(PROJ_RES_REC_COLLCTN, PROJ_RES_REC_TRMT)) %>%
+  mutate(LogResBurden = ifelse(ResBurden > 0, log(ResBurden), 0))
+  
 ```
 
-mutate -
-add field for residential burden (need/ppl)
-add field for shortfall (res rec collectn - res_pop)
+```{r Calculate Log of Total Official Need}
+
+cwns2012 <- cwns2012 %>% 
+  mutate(LogOfficialNeed = ifelse(TOTAL_OFFICIAL_NEED > 0, log(TOTAL_OFFICIAL_NEED), 0))
+  
+```
+
 
 
 ### Calculate the Transformations of Potential Explanatory Variables
@@ -783,11 +793,28 @@ You could also try to incorporate dummy variables for any other categorizations 
 
 Run pairwise correlations between variables that you may want to include in your regression to make sure to avoid multicollinearity, or included highly correlated variables in the regressions.
 
-```{r correlation medinc09}
-cor(cwns2012$res_pop10_dens, cwns2012$CSS, use="complete.obs", method="pearson")
+```{r correlation tests}
+
+library("Hmisc")
+res2 <- rcorr(as.matrix(my_data))
+res2
+
+corrplot(res, type = "upper", order = "hclust", tl.col = "black", tl.srt = 45)
+
+
 ```
 
 Include correlation matrix? - Charlie to do
+
+res_pop10_dens
+res_pop_dens_chng_80_10
+proj_change_res_rec_trmt
+proj_change_res_rec_collctn
+POP10
+MEDINC09
+ResBurden
+LogResBurden
+LogOfficialNeed
 
 ## Bivariate Regressions
 *Do we need this section now?*
@@ -817,11 +844,7 @@ multicollinearity in your analysis.
 
 
 ```{r}
-model1<-lm (TOTAL_OFFICIAL_NEED ~ res_pop10_dens + CSS + MEDINC09, data = cwns2012)
+model1<-lm (TOTAL_OFFICIAL_NEED ~ res_pop10_dens + CSS + ResBurden, data = cwns2012)
 summary(model1)
 ```
 
-```{r}
-model2<-lm (TOTAL_OFFICIAL_NEED ~ res_pop10_dens + POP10 + res_pop_dens_chng_80_10, data = cwns2012)
-summary(model2)
-```
