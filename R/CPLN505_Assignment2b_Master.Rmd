@@ -31,8 +31,8 @@ rm(list=ls())
 #install.packages("scales")
 #install.packages("gmodels")
 #install.packages("DT")
-install.packages("corrplot")
-install.packages("Hmisc")
+#install.packages("corrplot")
+#install.packages("Hmisc")
 
 #run every session
 library(tidyverse)
@@ -779,49 +779,60 @@ cwns2012 <- cwns2012 %>%
 ```{r Dummy variable for growing cities and densifying cities}
 
 cwns2012 <- cwns2012 %>% 
-  mutate(GrowingCity = ifelse(POP10-POP80) > 0, log(TOTAL_OFFICIAL_NEED), 0) %>%   ******OLIVER
+  mutate(GrowingCity = ifelse(POP10-POP80) > 0, log(TOTAL_OFFICIAL_NEED), 0) %>%   #OLIVER
   mutate(DensifyingCity= )
 ```
 
 ### Calculate the Transformations of Potential Explanatory Variables
 
-logs of Median Income variables
-
+**Variables of interest:**
+res_pop10_dens
+res_pop_dens_chng_80_10
 logs of Population variables
+proj_change_res_rec_trmt
+proj_change_res_rec_collctn
+POP10
+MEDINC09
+logs of Median Income vars
+ResBurden
+LogResBurden
+LogOfficialNeed
+CSS
+'growing cities'
+
 
 Dummy variables for ‘groups’ such as ‘growing cities’ or ‘cities with non-residential populations’
 
 You could also try to incorporate dummy variables for any other categorizations you think would explain facilities’ systematically higher or lower reported needs. Remember: dummy variables are essentially intercept adjustments in a regression that are based on the entire group having a higher/lower mean than non-group facilities. From what you found from your previous scope (i.e. any significant associations or correlations you found in Part I. of the assignment), you may also wish to include some of the change and percent change metrics you calculated to explain ‘need’. Explain theoretical reasons why you want to include certain variables in your regressions.
 
 
-### Pairwise Correlations
+### Testing for multi-coliniearity
 
-Run pairwise correlations between variables that you may want to include in your regression to make sure to avoid multicollinearity, or included highly correlated variables in the regressions.
+Running pairwise correlations between variables (visualized with the correlogram below) revealed that some of the variables we are interested in testing are highly correlated.  
 
-```{r correlation tests}
+The following variables exhibited high degrees of significance with each other:  
+*log of official need & log of residential burden*  
+*projected change in residences receiving treatment & projected change in residences receiving collection*  
+*residential population density in 2010 & residential population density change from 1980 to 2010*
 
-library("Hmisc")
-res2 <- rcorr(as.matrix(my_data))
-res2
+Residential population density in 2010 and residential burden also seem to be correlated.
 
-corrplot(res, type = "upper", order = "hclust", tl.col = "black", tl.srt = 45)
+```{r correlation matrix}
+#make matrix of variables we're testing
+mod_vars <- cwns2012 %>% 
+  select(res_pop10_dens, res_pop_dens_chng_80_10, proj_change_res_rec_trmt, proj_change_res_rec_collctn, POP10,
+         MEDINC09, ResBurden, LogResBurden, LogOfficialNeed, CSS)
 
+#compute correlation matrix
+cormatrix <- cor(mod_vars) %>% 
+  round(., 2)
 
+#plot a correlogram
+corrplot(cormatrix, method = "circle", type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45)
 ```
 
-Include correlation matrix? - Charlie to do
 
-res_pop10_dens
-res_pop_dens_chng_80_10
-proj_change_res_rec_trmt
-proj_change_res_rec_collctn
-POP10
-MEDINC09
-ResBurden
-LogResBurden
-LogOfficialNeed
-CSS
-'growing cities'
 
 
 ## Bivariate Regressions
