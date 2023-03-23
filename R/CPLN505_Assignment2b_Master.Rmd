@@ -630,14 +630,15 @@ Similarly, median income seems to have an extremely weak correlation with need b
 ```{r correlation medinc09}
 cor(cwns2012$MEDINC09, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
 ```
-Projected change in non-residential population recieving collection has a slight correlation with need.
-```{r correlation proj chng n res rec collctn}
-cor(cwns2012$proj_chng_n_res_rec_collctn, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
-```
-Projected change in non-residential population recieving treatment has nearly the same slight correlation.
+Projected change in non-residential population receiving treatment has a slight correlation with need.
 ```{r correlation proj chng res rec trtmt}
 cor(cwns2012$proj_chng_n_res_rec_trmt, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
 ```
+Projected change in non-residential population receiving collection has nearly the same slight correlation (0.1% higher).
+```{r correlation proj chng n res rec collctn}
+cor(cwns2012$proj_chng_n_res_rec_collctn, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+```
+
 2010 population is in the same category of slight correlation.
 ```{r correlation pop10}
 cor(cwns2012$POP10, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
@@ -655,7 +656,7 @@ Change in residential population density from 1980 to 2010 has a moderate correl
 ```{r correlation res pop dens chng}
 cor(cwns2012$res_pop_dens_chng_80_10, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
 ```
-Although residential population density in 2010 still exhibits a moderate correlation with need overall, it's correlation coefficient is significantly higer than the rest of the variables we tested.
+Although residential population density in 2010 still exhibits a moderate correlation with need overall, it's correlation coefficient is significantly higher than the rest of the variables we tested.
 ```{r correlation res pop10 dens}
 cor(cwns2012$res_pop10_dens, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
 ```
@@ -751,30 +752,96 @@ ggplot(cwns2012, aes(x=log(POP10), y=log(TOTAL_OFFICIAL_NEED))) +
 
 ### Create Variables to Represent Need
 
-Suspecting that Philadelphia’s high infrastructure need can be operationalized in different ways, you create the following variables to represent ‘need’:
+> From the homework, delete when done:
+
+> Suspecting that Philadelphia’s high infrastructure need can be operationalized in different ways, you create the following variables to represent ‘need’:
 • Total Official Need ($, untransformed)
 • Log of Total Official Need (log $) 
 • Residential Burden ($/person) 
 • Log of Residential Burden (log $/person)
 
-Give an explanation for why you choose to operationalize ‘need’ in the above ways (what each can reveal, and the interpretations of coefficients from regression change). Boxplots and density/histograms of these variables can help illustrate very skewed distributions.
+> Give an explanation for why you choose to operationalize ‘need’ in the above ways (what each can reveal, and the interpretations of coefficients from regression change). Boxplots and density/histograms of these variables can help illustrate very skewed distributions.
 
-*Hint: Be careful of dividing by zeros in communities that have either reported zero residential treatment or zero residential collection values. You can assume that most residents that receive treatment also receive collection and vice versa, but that non-standard reported has resulted in some inconsistency in the data. To deal with this while avoiding double counting, try something like:*
+> Hint: Be careful of dividing by zeros in communities that have either reported zero residential treatment or zero residential collection values. You can assume that most residents that receive treatment also receive collection and vice versa, but that non-standard reported has resulted in some inconsistency in the data.
 
-```{r Calculate Residential Burden and Log of Residential Burden}
+To model infrastructure need, we need variables that represent it. Based on our tests of correlation and association, we select the following variables to include in our models:
+
+* res_pop10_dens  
+* res_pop_dens_chng_80_10 
+* proj_change_res_rec_trmt
+* proj_change_res_rec_collctn
+* POP10
+* MEDINC09
+
+To better understand Philadelphia's especially high infrastructure need, we create additional variables:
+
+* ResBurden  
+* LogResBurden  
+* LogOfficialNeed  
+* logs of Population variables **still need to make?**  
+* logs of Median Income vars **still need to make**  
+
+Calculating Residential Burden:
+
+```{r Calculate Residential Burden}
 
 cwns2012 <- cwns2012 %>% 
-  mutate(ResBurden = TOTAL_OFFICIAL_NEED/max(PROJ_RES_REC_COLLCTN, PROJ_RES_REC_TRMT)) %>%
-  mutate(LogResBurden = ifelse(ResBurden > 0, log(ResBurden), 0))
-  
+  mutate(ResBurden = TOTAL_OFFICIAL_NEED/max(PROJ_RES_REC_COLLCTN, PROJ_RES_REC_TRMT))
+
+cwns2012%>%
+  ggplot(aes(x=ResBurden)) +
+  ggtitle("Projected Residential Burden") +
+  xlab("Distribution") + ylab("Need/Residences Receiving Services") +
+  geom_density(fill="#6496b4", size=.35, color="#0059c7", alpha=0.8) +
+  theme_linedraw()
+
 ```
+
+Calculating Log of Residential Burden:
+
+```{r Calculate Log of Residential Burden}
+cwns2012 <- cwns2012 %>% 
+  mutate(LogResBurden = ifelse(ResBurden > 0, log(ResBurden), 0))
+
+cwns2012%>%
+  ggplot(aes(x=LogResBurden)) +
+  ggtitle("Projected Log Adjusted Residential Burden") +
+  xlab("Distribution") + ylab("Log Adjusted Residential Burden") +
+  geom_density(fill="#6496b4", size=.35, color="#0059c7", alpha=0.8) +
+  theme_linedraw()
+
+```
+
+Calculating Log of Total Official Need:
 
 ```{r Calculate Log of Total Official Need}
 
 cwns2012 <- cwns2012 %>% 
   mutate(LogOfficialNeed = ifelse(TOTAL_OFFICIAL_NEED > 0, log(TOTAL_OFFICIAL_NEED), 0))
+
+cwns2012%>%
+  ggplot(aes(x=LogOfficialNeed)) +
+  ggtitle("Log Adjusted Total Official Need") +
+  xlab("Distribution") + ylab("Log Adjusted Total Official Need") +
+  geom_density(fill="#6496b4", size=.35, color="#0059c7", alpha=0.8) +
+  theme_linedraw()
   
 ```
+
+### Creating Binary "Dummy" Variables
+
+> From the homework, delete when done:
+> Dummy variables for ‘groups’ such as ‘growing cities’ or ‘cities with non-residential populations’
+
+> You could also try to incorporate dummy variables for any other categorizations you think would explain facilities’ systematically higher or lower reported needs. Remember: dummy variables are essentially intercept adjustments in a regression that are based on the entire group having a higher/lower mean than non-group facilities. From what you found from your previous scope (i.e. any significant associations or correlations you found in Part I. of the assignment), you may also wish to include some of the change and percent change metrics you calculated to explain ‘need’. Explain theoretical reasons why you want to include certain variables in your regressions.
+
+Suspecting that some factors influencing waste water infrastructure need in Philadelphia may be categorical rather than continuous, we create the following binary dummy variables to include in our models:
+
+* CSS
+* 'growing cities'  
+* high income
+
+
 
 ```{r Dummy variable for growing cities and densifying cities}
 
@@ -783,87 +850,173 @@ cwns2012 <- cwns2012 %>%
   mutate(DensifyingCity= )
 ```
 
-### Calculate the Transformations of Potential Explanatory Variables
-
-**Variables of interest:**
-res_pop10_dens
-res_pop_dens_chng_80_10
-logs of Population variables
-proj_change_res_rec_trmt
-proj_change_res_rec_collctn
-POP10
-MEDINC09
-logs of Median Income vars
-ResBurden
-LogResBurden
-LogOfficialNeed
-CSS
-'growing cities'
-
-
-Dummy variables for ‘groups’ such as ‘growing cities’ or ‘cities with non-residential populations’
-
-You could also try to incorporate dummy variables for any other categorizations you think would explain facilities’ systematically higher or lower reported needs. Remember: dummy variables are essentially intercept adjustments in a regression that are based on the entire group having a higher/lower mean than non-group facilities. From what you found from your previous scope (i.e. any significant associations or correlations you found in Part I. of the assignment), you may also wish to include some of the change and percent change metrics you calculated to explain ‘need’. Explain theoretical reasons why you want to include certain variables in your regressions.
-
-
 ### Testing for multi-coliniearity
+
+Final variable list to test with regressions:
+* res_pop10_dens
+* res_pop_dens_chng_80_10
+* logs of Population variables
+* proj_change_res_rec_trmt
+* proj_change_res_rec_collctn
+* POP10
+* MEDINC09
+* logs of Median Income vars
+* ResBurden
+* LogResBurden
+* LogOfficialNeed
+* CSS  
+* 'growing cities'
 
 Running pairwise correlations between variables (visualized with the correlogram below) revealed that some of the variables we are interested in testing are highly correlated.  
 
 The following variables exhibited high degrees of significance with each other:  
-*log of official need & log of residential burden*  
-*projected change in residences receiving treatment & projected change in residences receiving collection*  
-*residential population density in 2010 & residential population density change from 1980 to 2010*
+* log of official need & log of residential burden  
+* rojected change in residences receiving treatment & projected change in residences receiving collection  
+* residential population density in 2010 & residential population density change from 1980 to 2010
 
 Residential population density in 2010 and residential burden also seem to be correlated.
 
 ```{r correlation matrix}
 #make matrix of variables we're testing
 mod_vars <- cwns2012 %>% 
-  select(res_pop10_dens, res_pop_dens_chng_80_10, proj_change_res_rec_trmt, proj_change_res_rec_collctn, POP10,
-         MEDINC09, ResBurden, LogResBurden, LogOfficialNeed, CSS)
+  select(TOTAL_OFFICIAL_NEED, LogOfficialNeed, res_pop10_dens, res_pop_dens_chng_80_10, proj_change_res_rec_trmt,
+         proj_change_res_rec_collctn, POP10, MEDINC09, ResBurden, LogResBurden, CSS)
 
 #compute correlation matrix
 cormatrix <- cor(mod_vars) %>% 
   round(., 2)
 
 #plot a correlogram
-corrplot(cormatrix, method = "circle", type = "upper", order = "hclust", 
+corrplot(cormatrix, method = "circle", type = "full", order = "hclust", 
          tl.col = "black", tl.srt = 45)
 ```
 
-
-
-
 ## Bivariate Regressions
-*Do we need this section now?*
 
-Run bivariate regressions of explanatory variables against your ‘need variables.’ Make scatterplots
+> From the homework, delete when done:
+
+> Run bivariate regressions of explanatory variables against your ‘need variables.’ Make scatterplots
 showing the linear relationships between them (convention is to put the independent variable on
 the x-axis and the dependent variable, ‘need’ in this case, on the y-axis). Interpret the coefficient
 estimates of significant variables. How well do these simple bivariate models perform in
 predicting the various measures of ‘need’?
 
+Testing relationships between need and each of the variables considered above (minus the variables that exhibit strong multi-colinearity with need).
+
+```{r bivariate regressions}
+bimod1 <- lm(TOTAL_OFFICIAL_NEED ~ res_pop10_dens, data = cwns2012)
+summary(bimod1)
+
+bimod2 <- lm(TOTAL_OFFICIAL_NEED ~ proj_change_res_rec_trmt, data = cwns2012)
+summary(bimod2)
+
+bimod3 <- lm(TOTAL_OFFICIAL_NEED ~ POP10, data = cwns2012)
+summary(bimod3)
+
+bimod4 <- lm(TOTAL_OFFICIAL_NEED ~ MEDINC09, data = cwns2012)
+summary(bimod4)
+
+bimod5 <- lm(TOTAL_OFFICIAL_NEED ~ LogResBurden, data = cwns2012)
+summary(bimod5)
+
+bimod6 <- lm(TOTAL_OFFICIAL_NEED ~ CSS, data = cwns2012)
+summary(bimod6)
+
+
+```
+
+
 
 ## Multivariate Regression
 
-Build multivariate regressions for each of the measures of ‘need’. Explain the use of, and report
+> From the homework, delete when done:
+
+> Build multivariate regressions for each of the measures of ‘need’. Explain the use of, and report
 the results of automated variable selection techniques, such as Forward and Backward Selection.
 
-In your final models for each of the measures of ‘need’, report which variables you chose to
+> In your final models for each of the measures of ‘need’, report which variables you chose to
 include in your final “leanest and meanest” models, interpret the significant coefficients of the
 final models. Make sure that you interpret interesting results in full sentences, as well as
 presenting regression results in a table summarizing your work. Compare models against each
 other, using R squared values and F-tests.
 
-Remember to take care in interpreting log-transformed variables.
+> Remember to take care in interpreting log-transformed variables.
 Try interactions between variables. Do any have significant effects?
 Report the VIF values to convince suspicious readers that you have considered the problem of
 multicollinearity in your analysis.
 
+Based on the results of the correlogram and bivariate regresssions, we create the following variable sets to test with multivariate regressions. We create multiple variable sets to independently test variables that exhibit multi-colinearity but still appear to be significant.
 
-```{r}
-model1<-lm (TOTAL_OFFICIAL_NEED ~ res_pop10_dens + CSS + ResBurden, data = cwns2012)
-summary(model1)
+
+**Variable Set 1**  
+* TOTAL_OFFICIAL_NEED  
+* res_pop10_dens
+* proj_change_res_rec_trmt (the treatment variable has a **slightly** higher correlation with need than collection)
+* POP10
+* MEDINC09
+* LogResBurden
+* CSS  
+* 'growing cities' **include once made**
+
+### Using Backward Selection to Select Variables
+
+For our first model, we begin with a selection of all of relevant variables that do not exhibit multi-collinearity.
+
+```{r multivariate regresssion model 1}
+#Interpreting regression results - key statistics:
+#R-squared
+  # Tells what % of the variability in the dependent variable is explained by the model
+  # in other words - r-squared measures the strength of the relationship btwn the model
+  # and dependent variable on a 0-100% scale
+  # so, higher r-squared values represent smaller differences btwn the observed data
+  # and the fitted values.
+  # r-squared < 50% is common when studying human behavior
+  # IMPORTANT NOTE: r-squared increases every time you add an independent variable to the model.
+#Adjusted R-squared
+  # Adjusts for the number of terms in the model!
+  # Its value increases only when the new term improves the model fit more than expected by chance alone.
+  # The adjusted R-squared value actually decreases when the term doesn’t improve the model fit enough.
+  # Useful for comparing goodness-of-fit for regression models with differing numbers of independent variables.
+#Multiple R-squared
+#Significance codes
+#F-statistic
+  # a large f-stat means the model has a strong fit and we can reject the
+  # null hypothesis that a null model (just the intercept) describes the data better.
+#p-value
+#AIC
+  # Particularly helpful for backwards selection
+
+mod1<-lm (TOTAL_OFFICIAL_NEED ~ POP10:res_pop10_dens + MEDINC09 + MEDINC09:POP10 + proj_change_res_rec_trmt + LogResBurden + CSS, data = cwns2012)
+
+summary(mod1)
 ```
+**Interpret Results of mod1**
+
+**Test mod1 for multi-colinearity**
+
+```{r multi-colinearity test mod1}
+#variance inflation factor (VIF)
+  # Index of how a coefficient variance increases due to colinearity.
+  # VIF calculates how correlated the variable is with all the other variables in the model.
+  # Mechanics: Regress X1 on X2, calculate r2 of this relationship
+  # Calculate the VIF for X1 as follows:  1/(1 - r2)
+  # some people say if VIF>5-10 then you have a problem, 
+  # others are more conservative and say if sqrt(vif)>2 then you have a problem
+
+vif(mod1) # variance inflation factors 
+sqrt(vif(mod1))
+```
+
+## Final Model
+
+Why we choose this model.
+
+Describe coefficients (for each 1 unit increase in these variables, we expect the following change in total need).
+
+Provide diagnosis of residuals vs. fitted
+
+Interpretation: what factors relate to total official need? How does they relate to total official need in Philly?
+
+What does this tell us about wastewater facility need nationally and in Philadelphia?
+
 
