@@ -33,6 +33,7 @@ rm(list=ls())
 #install.packages("DT")
 #install.packages("corrplot")
 #install.packages("Hmisc")
+#install.packages("car")
 
 #run every session
 library(tidyverse)
@@ -45,6 +46,7 @@ library(gmodels)
 library(DT)
 library(corrplot)
 library(Hmisc)
+library(car)
 
 #set colors
 palette <- c("#a02300", "#0059c7", "#6496b4", "#E1B93C")
@@ -111,7 +113,7 @@ cwns2012[sapply(cwns2012, is.infinite)] <- 0
 
 #Interactive Summary Table of Resilience Measures by EPA Region
 cwns2012 %>% 
-  select(TOTAL_OFFICIAL_NEED, EPA_REGION, proj_change_res_rec_collctn, proj_prcntchng_res_rec_collctn, 
+  dplyr::select(TOTAL_OFFICIAL_NEED, EPA_REGION, proj_change_res_rec_collctn, proj_prcntchng_res_rec_collctn, 
          proj_change_res_rec_trmt, proj_prcntchng_res_rec_trmt, proj_chng_n_res_rec_collctn, 
          proj_prcntchng_n_res_rec_collctn, proj_chng_n_res_rec_trmt, proj_prcntchng_n_res_rec_trmt,
          res_pop10_dens, res_pop10_dens, res_pop00_dens, res_pop90_dens, res_pop80_dens, 
@@ -210,7 +212,7 @@ need_top10 <- cwns2012 %>%
 
 #Create a table with the top ten facilities by need and geography
 need_top10 %>% 
-  select(TOTAL_OFFICIAL_NEED, FACILITY_CITY, COUNTYNAME, STATE, EPA_REGION) %>% 
+  dplyr::select(TOTAL_OFFICIAL_NEED, FACILITY_CITY, COUNTYNAME, STATE, EPA_REGION) %>% 
   gt() %>% 
   tab_header(title = "Top Ten Facilities by Need") %>% 
   fmt_currency(columns = c(TOTAL_OFFICIAL_NEED), currency = "USD")
@@ -229,7 +231,7 @@ need_bot10 <- cwns2012 %>%
 
 #Create a table with the bottom ten facilities by need and geography
 need_bot10 %>% 
-  select(TOTAL_OFFICIAL_NEED, FACILITY_CITY, COUNTYNAME, STATE, EPA_REGION) %>% 
+  dplyr::select(TOTAL_OFFICIAL_NEED, FACILITY_CITY, COUNTYNAME, STATE, EPA_REGION) %>% 
   gt() %>% 
   tab_header(title = "Bottom Ten Facilities by Need") %>% 
   fmt_currency(columns = c(TOTAL_OFFICIAL_NEED), currency = "USD")
@@ -764,7 +766,7 @@ ggplot(cwns2012, aes(x=log(POP10), y=log(TOTAL_OFFICIAL_NEED))) +
 
 > Hint: Be careful of dividing by zeros in communities that have either reported zero residential treatment or zero residential collection values. You can assume that most residents that receive treatment also receive collection and vice versa, but that non-standard reported has resulted in some inconsistency in the data.
 
-To model infrastructure need, we need variables that represent it. Based on our tests of correlation and association, we select the following variables to include in our models:
+To model infrastructure need, we need variables that represent it. From our tests of correlation and association, we select the following variables (based on XX) to include in our models:
 
 * res_pop10_dens  
 * res_pop_dens_chng_80_10 
@@ -839,8 +841,8 @@ Suspecting that some factors influencing waste water infrastructure need in Phil
 
 * CSS
 * 'growing cities'  
-* high income
-
+* high income **need to make**
+* densifying cities?
 
 
 ```{r Dummy variable for growing cities and densifying cities}
@@ -870,24 +872,25 @@ Final variable list to test with regressions:
 Running pairwise correlations between variables (visualized with the correlogram below) revealed that some of the variables we are interested in testing are highly correlated.  
 
 The following variables exhibited high degrees of significance with each other:  
-* log of official need & log of residential burden  
-* rojected change in residences receiving treatment & projected change in residences receiving collection  
-* residential population density in 2010 & residential population density change from 1980 to 2010
+* log of official need & log of residential burden  **(add cor. coefficient)** so we cannot use residential burden in our models.
+* projected change in residences receiving treatment & projected change in residences receiving collection **(add cor. coefficient)**. We chose to move forward with projected change in residences receiving treatment because the corr. score is **XX** points higher for treatment.
 
-Residential population density in 2010 and residential burden also seem to be correlated.
+* residential population density in 2010 & residential population density change from 1980 to 2010 **(add cor. coefficient)**. We chose to use residential population in 2010 in 2010 moving forward because it has a higher correlation with total official need.
+
 
 ```{r correlation matrix}
 #make matrix of variables we're testing
 mod_vars <- cwns2012 %>% 
-  select(TOTAL_OFFICIAL_NEED, LogOfficialNeed, res_pop10_dens, res_pop_dens_chng_80_10, proj_change_res_rec_trmt,
-         proj_change_res_rec_collctn, POP10, MEDINC09, ResBurden, LogResBurden, CSS)
+  dplyr::select(TOTAL_OFFICIAL_NEED, LogOfficialNeed, res_pop10_dens, res_pop_dens_chng_80_10,
+                proj_change_res_rec_trmt, proj_change_res_rec_collctn, POP10, MEDINC09,
+                ResBurden, LogResBurden, CSS)
 
 #compute correlation matrix
 cormatrix <- cor(mod_vars) %>% 
   round(., 2)
 
 #plot a correlogram
-corrplot(cormatrix, method = "circle", type = "full", order = "hclust", 
+corrplot(cormatrix, method = "circle", type = "lower", order = "hclust", 
          tl.col = "black", tl.srt = 45)
 ```
 
@@ -901,30 +904,37 @@ the x-axis and the dependent variable, ‘need’ in this case, on the y-axis). 
 estimates of significant variables. How well do these simple bivariate models perform in
 predicting the various measures of ‘need’?
 
-Testing relationships between need and each of the variables considered above (minus the variables that exhibit strong multi-colinearity with need).
+Testing relationships between each of the variables considered above (minus the variables that exhibit strong multi-colinearity with need).
 
-```{r bivariate regressions}
+```{r bivariate regression 1}
 bimod1 <- lm(TOTAL_OFFICIAL_NEED ~ res_pop10_dens, data = cwns2012)
 summary(bimod1)
-
-bimod2 <- lm(TOTAL_OFFICIAL_NEED ~ proj_change_res_rec_trmt, data = cwns2012)
-summary(bimod2)
-
-bimod3 <- lm(TOTAL_OFFICIAL_NEED ~ POP10, data = cwns2012)
-summary(bimod3)
-
-bimod4 <- lm(TOTAL_OFFICIAL_NEED ~ MEDINC09, data = cwns2012)
-summary(bimod4)
-
-bimod5 <- lm(TOTAL_OFFICIAL_NEED ~ LogResBurden, data = cwns2012)
-summary(bimod5)
-
-bimod6 <- lm(TOTAL_OFFICIAL_NEED ~ CSS, data = cwns2012)
-summary(bimod6)
-
-
 ```
 
+```{r bivariate regression 2}
+bimod2 <- lm(TOTAL_OFFICIAL_NEED ~ proj_change_res_rec_trmt, data = cwns2012)
+summary(bimod2)
+```
+
+```{r bivariate regression 3}
+bimod3 <- lm(TOTAL_OFFICIAL_NEED ~ POP10, data = cwns2012)
+summary(bimod3)
+```
+
+```{r bivariate regression 4}
+bimod4 <- lm(TOTAL_OFFICIAL_NEED ~ MEDINC09, data = cwns2012)
+summary(bimod4)
+```
+
+```{r bivariate regression 5}
+bimod5 <- lm(TOTAL_OFFICIAL_NEED ~ LogResBurden, data = cwns2012)
+summary(bimod5)
+```
+
+```{r bivariate regression 6}
+bimod6 <- lm(TOTAL_OFFICIAL_NEED ~ CSS, data = cwns2012)
+summary(bimod6)
+```
 
 
 ## Multivariate Regression
@@ -946,7 +956,6 @@ Report the VIF values to convince suspicious readers that you have considered th
 multicollinearity in your analysis.
 
 Based on the results of the correlogram and bivariate regresssions, we create the following variable sets to test with multivariate regressions. We create multiple variable sets to independently test variables that exhibit multi-colinearity but still appear to be significant.
-
 
 **Variable Set 1**  
 * TOTAL_OFFICIAL_NEED  
@@ -982,13 +991,17 @@ For our first model, we begin with a selection of all of relevant variables that
 #F-statistic
   # a large f-stat means the model has a strong fit and we can reject the
   # null hypothesis that a null model (just the intercept) describes the data better.
-#p-value
-#AIC
+  # If the p-value associated with the F-stat is ≥ 0.05 Then there is no relationship between ANY of the
+  # independent variables and Y.
+  # If the p-value associated with the F-statistic < 0.05 then AT LEAST 1 independent variable is related to Y.
+#AIC - oliver to fill out
   # Particularly helpful for backwards selection
 
 mod1<-lm (TOTAL_OFFICIAL_NEED ~ POP10:res_pop10_dens + MEDINC09 + MEDINC09:POP10 + proj_change_res_rec_trmt + LogResBurden + CSS, data = cwns2012)
 
-summary(mod1)
+mod1b<-lm (TOTAL_OFFICIAL_NEED ~ POP10*res_pop10_dens + MEDINC09 + MEDINC09*POP10 + proj_change_res_rec_trmt + LogResBurden + CSS, data = cwns2012)
+
+summary(mod1b)
 ```
 **Interpret Results of mod1**
 
