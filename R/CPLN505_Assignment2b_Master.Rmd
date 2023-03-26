@@ -848,8 +848,8 @@ Suspecting that some factors influencing waste water infrastructure need in Phil
 ```{r Dummy variable for growing cities and densifying cities}
 
 cwns2012 <- cwns2012 %>% 
-  mutate(GrowingCity = ifelse(POP10-POP80) > 0, log(TOTAL_OFFICIAL_NEED), 0) %>%   #OLIVER
-  mutate(DensifyingCity= )
+  mutate(GrowingCity = ifelse(POP10-POP80) > 0, 1, 0) %>%
+  mutate(DensifyingCity= ifelse(res_pop10_dens-res_pop80_dens) > 0, 1, 0)
 ```
 
 ### Testing for multi-coliniearity
