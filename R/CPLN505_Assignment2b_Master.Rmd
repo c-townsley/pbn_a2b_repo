@@ -612,7 +612,8 @@ CrossTable(cwns_int$need_int, cwns_int$proj_change_res_rec_collctn,  fisher = FA
 
 # Part I.IV: Correlation
 
-Correlation tests were run for all the resilience measures, as well as for 2010 population, 2010 population density, and 2009 median income. Values with insignificant correlation with total official need were commented out of the code.
+Correlation tests were run for all the resilience measures, as well as for 2010 population, 2010 population density, 2009 median income, and present residential receiving treatment.
+Values with insignificant correlation with total official need were commented out of the code.
 
 ### Correlation of Variables of Interest with Total Official Need
 
@@ -661,6 +662,21 @@ cor(cwns2012$res_pop_dens_chng_80_10, cwns2012$TOTAL_OFFICIAL_NEED, use="complet
 Although residential population density in 2010 still exhibits a moderate correlation with need overall, it's correlation coefficient is significantly higher than the rest of the variables we tested.
 ```{r correlation res pop10 dens}
 cor(cwns2012$res_pop10_dens, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+```
+```{r correlation res pop10 dens}
+cor(cwns2012$PRES_RES_REC_TRMT, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+```
+
+```{r correlation res pop10 dens}
+cor(cwns2012$PRES_RES_REC_COLLCTN, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+```
+
+```{r correlation res pop10 dens}
+cor(cwns2012$PCTWHITE10, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+```
+
+```{r correlation res pop10 dens}
+cor(cwns2012$CSS, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
 ```
 
 
@@ -774,61 +790,29 @@ To model infrastructure need, we need variables that represent it. From our test
 * proj_change_res_rec_collctn
 * POP10
 * MEDINC09
+* PRES_RES_REC_TRMT
+* PRES_RES_REC_COLLCTN
+* PCTWHITE10
+* CSS
 
 To better understand Philadelphia's especially high infrastructure need, we create additional variables:
 
 * ResBurden  
 * LogResBurden  
 * LogOfficialNeed  
-* logs of Population variables **still need to make?**  
-* logs of Median Income vars **still need to make**  
+* LogPOP10
+* LogMEDINC09
 
-Calculating Residential Burden:
+Calculating Additional Variables:
 
 ```{r Calculate Residential Burden}
-
 cwns2012 <- cwns2012 %>% 
-  mutate(ResBurden = TOTAL_OFFICIAL_NEED/max(PROJ_RES_REC_COLLCTN, PROJ_RES_REC_TRMT))
-
-cwns2012%>%
-  ggplot(aes(x=ResBurden)) +
-  ggtitle("Projected Residential Burden") +
-  xlab("Distribution") + ylab("Need/Residences Receiving Services") +
-  geom_density(fill="#6496b4", size=.35, color="#0059c7", alpha=0.8) +
-  theme_linedraw()
-
+  mutate(ResBurden = TOTAL_OFFICIAL_NEED/max(PROJ_RES_REC_COLLCTN, PROJ_RES_REC_TRMT)) %>% 
+  mutate(LogResBurden = ifelse(ResBurden > 0, log(ResBurden), 0)) %>% 
+  mutate(LogPOP10 = ifelse(POP10 > 0, log(POP10), 0)) %>% 
+  mutate(LogMEDINC09 = ifelse(MEDINC09 > 0, log(MEDINC09), 0))
 ```
 
-Calculating Log of Residential Burden:
-
-```{r Calculate Log of Residential Burden}
-cwns2012 <- cwns2012 %>% 
-  mutate(LogResBurden = ifelse(ResBurden > 0, log(ResBurden), 0))
-
-cwns2012%>%
-  ggplot(aes(x=LogResBurden)) +
-  ggtitle("Projected Log Adjusted Residential Burden") +
-  xlab("Distribution") + ylab("Log Adjusted Residential Burden") +
-  geom_density(fill="#6496b4", size=.35, color="#0059c7", alpha=0.8) +
-  theme_linedraw()
-
-```
-
-Calculating Log of Total Official Need:
-
-```{r Calculate Log of Total Official Need}
-
-cwns2012 <- cwns2012 %>% 
-  mutate(LogOfficialNeed = ifelse(TOTAL_OFFICIAL_NEED > 0, log(TOTAL_OFFICIAL_NEED), 0))
-
-cwns2012%>%
-  ggplot(aes(x=LogOfficialNeed)) +
-  ggtitle("Log Adjusted Total Official Need") +
-  xlab("Distribution") + ylab("Log Adjusted Total Official Need") +
-  geom_density(fill="#6496b4", size=.35, color="#0059c7", alpha=0.8) +
-  theme_linedraw()
-  
-```
 
 ### Creating Binary "Dummy" Variables
 
@@ -839,35 +823,35 @@ cwns2012%>%
 
 Suspecting that some factors influencing waste water infrastructure need in Philadelphia may be categorical rather than continuous, we create the following binary dummy variables to include in our models:
 
-* CSS
-* 'growing cities'  
-* high income **need to make**
-* densifying cities?
+* GrowingCity
 
-
-```{r Dummy variable for growing cities and densifying cities}
+```{r Dummy variable creation}
 
 cwns2012 <- cwns2012 %>% 
-  mutate(GrowingCity = ifelse(POP10-POP80) > 0, 1, 0) %>%
-  mutate(DensifyingCity= ifelse(res_pop10_dens-res_pop80_dens) > 0, 1, 0)
+  mutate(GrowingCity = ifelse(POP10-POP80 > 0, 1, 0))
+
 ```
 
 ### Testing for multi-coliniearity
 
-Final variable list to test with regressions:
-* res_pop10_dens
-* res_pop_dens_chng_80_10
-* logs of Population variables
+Final variable list to test:
+* res_pop10_dens  
+* res_pop_dens_chng_80_10 
 * proj_change_res_rec_trmt
 * proj_change_res_rec_collctn
 * POP10
 * MEDINC09
-* logs of Median Income vars
-* ResBurden
-* LogResBurden
-* LogOfficialNeed
-* CSS  
-* 'growing cities'
+* PRES_RES_REC_TRMT
+* PRES_RES_REC_COLLCTN
+* PCTWHITE10
+* ResBurden  
+* LogResBurden  
+* LogOfficialNeed  
+* LogPOP10
+* LogMEDINC09
+* CSS
+* GrowingCity
+
 
 Running pairwise correlations between variables (visualized with the correlogram below) revealed that some of the variables we are interested in testing are highly correlated.  
 
@@ -883,7 +867,7 @@ The following variables exhibited high degrees of significance with each other:
 mod_vars <- cwns2012 %>% 
   dplyr::select(TOTAL_OFFICIAL_NEED, LogOfficialNeed, res_pop10_dens, res_pop_dens_chng_80_10,
                 proj_change_res_rec_trmt, proj_change_res_rec_collctn, POP10, MEDINC09,
-                ResBurden, LogResBurden, CSS)
+                ResBurden, LogResBurden, PRES_RES_REC_TRMT, PRES_RES_REC_COLLCTN, LogPOP10, LogMEDINC09, PCTWHITE10, CSS, GrowingCity)
 
 #compute correlation matrix
 cormatrix <- cor(mod_vars) %>% 
@@ -893,6 +877,44 @@ cormatrix <- cor(mod_vars) %>%
 corrplot(cormatrix, method = "circle", type = "lower", order = "hclust", 
          tl.col = "black", tl.srt = 45)
 ```
+```{r correlations}
+print('res_pop10_dens')
+cor(cwns2012$res_pop10_dens, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+print('res_pop_dens_chng_80_10')
+cor(cwns2012$res_pop_dens_chng_80_10, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+print('proj_change_res_rec_trmt')
+cor(cwns2012$proj_change_res_rec_trmt, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+print('proj_change_res_rec_collctn')
+cor(cwns2012$proj_change_res_rec_collctn, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+print('POP10')
+cor(cwns2012$POP10, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+print('LogPOP10')
+cor(cwns2012$LogPOP10, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+print('PRES_RES_REC_TRMT')
+cor(cwns2012$PRES_RES_REC_TRMT, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+print('PCTWHITE10')
+cor(cwns2012$PCTWHITE10, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+print('ResBurden')
+cor(cwns2012$ResBurden, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+print('LogResBurden')
+cor(cwns2012$LogResBurden, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+print('LogOfficialNeed')
+cor(cwns2012$LogOfficialNeed, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+print('LogMEDINC09')
+cor(cwns2012$LogMEDINC09, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+print('CSS')
+cor(cwns2012$CSS, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+```
+
+
+Based on correlation with Total Official Need, and elimination of one of a variable pair when colinearity is present, favoring the one with higher correlation with need, we narrowed down this list of variables to 5 indie vars.
+
+Final variable list to test:
+* res_pop10_dens (cor with need = 0.42)
+* PRES_RES_REC_TRMT (cor with need = 0.53)
+* LogResBurden (cor with need = 0.39)
+* CSS (cor with need = 0.20)
+* PCTWHITE10 (cor with need = -0.15)
 
 ## Bivariate Regressions
 
@@ -904,37 +926,69 @@ the x-axis and the dependent variable, ‘need’ in this case, on the y-axis). 
 estimates of significant variables. How well do these simple bivariate models perform in
 predicting the various measures of ‘need’?
 
-Testing relationships between each of the variables considered above (minus the variables that exhibit strong multi-colinearity with need).
+Testing relationships between each of the variables considered above (minus the variables that exhibit strong colinearity).
 
+Testing relationships between three of the variables considered above which have the highest correlations with need.
+
+Need vs Residential Population Density 2010
 ```{r bivariate regression 1}
 bimod1 <- lm(TOTAL_OFFICIAL_NEED ~ res_pop10_dens, data = cwns2012)
 summary(bimod1)
+
+plot(fitted(bimod1), bimod1$residuals,
+     main = "Fitted Model Against Residuals: Population Density",
+     xlab = "Fitted Model 1", ylab = "Residuals",
+     col="#6496b4", pch = 16)
+abline(0,0, col = "#0059c7")
+
 ```
 
 ```{r bivariate regression 2}
-bimod2 <- lm(TOTAL_OFFICIAL_NEED ~ proj_change_res_rec_trmt, data = cwns2012)
+bimod2 <- lm(TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT, data = cwns2012)
 summary(bimod2)
+
+plot(fitted(bimod2), bimod2$residuals,
+     main = "Fitted Model Against Residuals: Residential Receiving Treatment",
+     xlab = "Fitted Model 2", ylab = "Residuals",
+     col="#6496b4", pch = 16)
+abline(0,0, col = "#0059c7")
 ```
 
 ```{r bivariate regression 3}
-bimod3 <- lm(TOTAL_OFFICIAL_NEED ~ POP10, data = cwns2012)
+bimod3 <- lm(TOTAL_OFFICIAL_NEED ~ LogResBurden, data = cwns2012)
 summary(bimod3)
+
+plot(fitted(bimod3), bimod3$residuals,
+     main = "Fitted Model Against Residuals: Log Residential Burden",
+     xlab = "Fitted Model 3", ylab = "Residuals",
+     col="#6496b4", pch = 16)
+abline(0,0, col = "#0059c7")
 ```
 
 ```{r bivariate regression 4}
-bimod4 <- lm(TOTAL_OFFICIAL_NEED ~ MEDINC09, data = cwns2012)
+bimod4 <- lm(TOTAL_OFFICIAL_NEED ~ CSS, data = cwns2012)
 summary(bimod4)
+
+plot(fitted(bimod4), bimod4$residuals,
+     main = "Fitted Model Against Residuals: Combined Sewer System",
+     xlab = "Fitted Model 4", ylab = "Residuals",
+     col="#6496b4", pch = 16)
+abline(0,0, col = "#0059c7")
 ```
 
 ```{r bivariate regression 5}
-bimod5 <- lm(TOTAL_OFFICIAL_NEED ~ LogResBurden, data = cwns2012)
+bimod5 <- lm(TOTAL_OFFICIAL_NEED ~ PCTWHITE10, data = cwns2012)
 summary(bimod5)
-```
 
-```{r bivariate regression 6}
-bimod6 <- lm(TOTAL_OFFICIAL_NEED ~ CSS, data = cwns2012)
-summary(bimod6)
+plot(fitted(bimod5), bimod5$residuals,
+     main = "Fitted Model Against Residuals: Percent White Population",
+     xlab = "Fitted Model 5", ylab = "Residuals",
+     col="#6496b4", pch = 16)
+abline(0,0, col = "#0059c7")
 ```
+Residual Plots for each of these 5 variables
+
+
 
 ## Multivariate Regression
 
@@ -964,7 +1018,7 @@ Based on the results of the correlogram and bivariate regresssions, we create th
 * MEDINC09
 * LogResBurden
 * CSS  
-* 'growing cities' **include once made**
+* GrowingCity
 
 ### Using Backward Selection to Select Variables
 
@@ -997,9 +1051,9 @@ For our first model, we begin with a selection of all of relevant variables that
 #AIC - oliver to fill out
   # Particularly helpful for backwards selection
 
-mod1 <- lm (TOTAL_OFFICIAL_NEED ~ POP10*res_pop10_dens + MEDINC09 + MEDINC09*POP10 + proj_change_res_rec_trmt + LogResBurden + CSS, data = cwns2012)
+mod1.0 <- lm (TOTAL_OFFICIAL_NEED ~ POP10 + res_pop10_dens + MEDINC09 + proj_change_res_rec_trmt + LogResBurden + CSS + GrowingCity, data = cwns2012)
 
-summary(mod1)
+summary(mod1.0)
 ```
 
 **Interpret Results of mod1**
@@ -1017,25 +1071,26 @@ The VIF for Model 1 reveals that multiple variables exhibit multiple co-linearit
   # some people say if VIF>5-10 then you have a problem, 
   # others are more conservative and say if sqrt(vif)>2 then you have a problem
 
-vif(mod1) # variance inflation factors 
-sqrt(vif(mod1))
+vif(mod1.0) # variance inflation factors 
+sqrt(vif(mod1.0))
 ```
 
+All of our VIFs are less than 2, so we can proceed with confidence that colinearity among these variables is not hindering the model.
 
 **Model 2**
-Now we create a new model based on these results.
+Now we create a new model based on these results. Growing city dummy variable was removed due to low significance.
 
 ```{r mod 2}
-mod2 <- lm (TOTAL_OFFICIAL_NEED ~ POP10:res_pop10_dens + MEDINC09:POP10 + proj_change_res_rec_trmt + LogResBurden + CSS, data = cwns2012)
+mod1.1 <- lm (TOTAL_OFFICIAL_NEED ~ POP10 + res_pop10_dens + MEDINC09 + proj_change_res_rec_trmt + LogResBurden:CSS, data = cwns2012)
 
-summary(mod2)
+summary(mod1.1)
 ```
 
 **Test mod1 for multi-colinearity**
 
 ```{r multi-colinearity test2 mod1}
-vif(mod2) # variance inflation factors 
-sqrt(vif(mod2))
+vif(mod1.1) # variance inflation factors 
+sqrt(vif(mod1.1))
 ```
 
 ## Final Model
