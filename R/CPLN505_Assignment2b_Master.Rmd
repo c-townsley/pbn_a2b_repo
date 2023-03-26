@@ -936,7 +936,6 @@ bimod6 <- lm(TOTAL_OFFICIAL_NEED ~ CSS, data = cwns2012)
 summary(bimod6)
 ```
 
-
 ## Multivariate Regression
 
 > From the homework, delete when done:
@@ -969,7 +968,8 @@ Based on the results of the correlogram and bivariate regresssions, we create th
 
 ### Using Backward Selection to Select Variables
 
-For our first model, we begin with a selection of all of relevant variables that do not exhibit multi-collinearity.
+**Model 1**
+For our first model, we begin with a selection of all of relevant variables that do not exhibit multi-collinearity according to our correlation tests.
 
 ```{r multivariate regresssion model 1}
 #Interpreting regression results - key statistics:
@@ -997,15 +997,16 @@ For our first model, we begin with a selection of all of relevant variables that
 #AIC - oliver to fill out
   # Particularly helpful for backwards selection
 
-mod1<-lm (TOTAL_OFFICIAL_NEED ~ POP10:res_pop10_dens + MEDINC09 + MEDINC09:POP10 + proj_change_res_rec_trmt + LogResBurden + CSS, data = cwns2012)
+mod1 <- lm (TOTAL_OFFICIAL_NEED ~ POP10*res_pop10_dens + MEDINC09 + MEDINC09*POP10 + proj_change_res_rec_trmt + LogResBurden + CSS, data = cwns2012)
 
-mod1b<-lm (TOTAL_OFFICIAL_NEED ~ POP10*res_pop10_dens + MEDINC09 + MEDINC09*POP10 + proj_change_res_rec_trmt + LogResBurden + CSS, data = cwns2012)
-
-summary(mod1b)
+summary(mod1)
 ```
+
 **Interpret Results of mod1**
+R-squared and adjusted R-squared aren't awful but they could be higher. Median income doesn't seem to be significant. F-statistic p-value is low. Every other variable appears to be significant. Model 1 could perform better, but seems like a good start.
 
 **Test mod1 for multi-colinearity**
+The VIF for Model 1 reveals that multiple variables exhibit multiple co-linearity. 2010 Population, 2010 residential population density, the interaction between the two, and the interaction between 2010 population and 2009 median income all have VIF values above 5 and square root VIF values above 2.
 
 ```{r multi-colinearity test mod1}
 #variance inflation factor (VIF)
@@ -1018,6 +1019,23 @@ summary(mod1b)
 
 vif(mod1) # variance inflation factors 
 sqrt(vif(mod1))
+```
+
+
+**Model 2**
+Now we create a new model based on these results.
+
+```{r mod 2}
+mod2 <- lm (TOTAL_OFFICIAL_NEED ~ POP10:res_pop10_dens + MEDINC09:POP10 + proj_change_res_rec_trmt + LogResBurden + CSS, data = cwns2012)
+
+summary(mod2)
+```
+
+**Test mod1 for multi-colinearity**
+
+```{r multi-colinearity test2 mod1}
+vif(mod2) # variance inflation factors 
+sqrt(vif(mod2))
 ```
 
 ## Final Model
