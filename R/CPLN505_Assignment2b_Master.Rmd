@@ -764,7 +764,7 @@ ggplot(cwns2012, aes(x=log(POP10), y=log(TOTAL_OFFICIAL_NEED))) +
 
 ```
 
-# Part 2B
+# Part IIb
 
 ## Data Preparation and Preliminary Tests
 
@@ -824,11 +824,13 @@ cwns2012 <- cwns2012 %>%
 Suspecting that some factors influencing waste water infrastructure need in Philadelphia may be categorical rather than continuous, we create the following binary dummy variables to include in our models:
 
 * GrowingCity
+* high income?
 
 ```{r Dummy variable creation}
 
 cwns2012 <- cwns2012 %>% 
-  mutate(GrowingCity = ifelse(POP10-POP80 > 0, 1, 0))
+  mutate(GrowingCity = ifelse(POP10-POP80 > 0, 1, 0)) %>% 
+  mutate(highincome = ifelse(MEDINC09 >= ))
 
 ```
 
@@ -865,7 +867,7 @@ The following variables exhibited high degrees of significance with each other:
 ```{r correlation matrix}
 #make matrix of variables we're testing
 mod_vars <- cwns2012 %>% 
-  dplyr::select(TOTAL_OFFICIAL_NEED, LogOfficialNeed, res_pop10_dens, res_pop_dens_chng_80_10,
+  dplyr::select(TOTAL_OFFICIAL_NEED, log_TOTAL_NEED, res_pop10_dens, res_pop_dens_chng_80_10,
                 proj_change_res_rec_trmt, proj_change_res_rec_collctn, POP10, MEDINC09,
                 ResBurden, LogResBurden, PRES_RES_REC_TRMT, PRES_RES_REC_COLLCTN, LogPOP10, LogMEDINC09, PCTWHITE10, CSS, GrowingCity)
 
@@ -899,7 +901,7 @@ cor(cwns2012$ResBurden, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method
 print('LogResBurden')
 cor(cwns2012$LogResBurden, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
 print('LogOfficialNeed')
-cor(cwns2012$LogOfficialNeed, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+cor(cwns2012$TOTAL_OFFICIAL_NEED, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
 print('LogMEDINC09')
 cor(cwns2012$LogMEDINC09, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
 print('CSS')
@@ -942,6 +944,11 @@ plot(fitted(bimod1), bimod1$residuals,
 abline(0,0, col = "#0059c7")
 
 ```
+Want the points to be symmetric above and below the line (homoschedasticity assumption > we want equal variances). This doesn't look ideal because more of the residuals appear to be above the line.
+Also want to avoid linearity.
+Google ideal residual plots.
+Some of the assumptions of linear regression are not met here with regards to homoschedasticity and linearity.
+
 
 ```{r bivariate regression 2}
 bimod2 <- lm(TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT, data = cwns2012)
@@ -964,6 +971,8 @@ plot(fitted(bimod3), bimod3$residuals,
      col="#6496b4", pch = 16)
 abline(0,0, col = "#0059c7")
 ```
+This is happening because looking at need vs. log of need. Don't include this model.
+
 
 ```{r bivariate regression 4}
 bimod4 <- lm(TOTAL_OFFICIAL_NEED ~ CSS, data = cwns2012)
@@ -976,6 +985,7 @@ plot(fitted(bimod4), bimod4$residuals,
 abline(0,0, col = "#0059c7")
 ```
 
+
 ```{r bivariate regression 5}
 bimod5 <- lm(TOTAL_OFFICIAL_NEED ~ PCTWHITE10, data = cwns2012)
 summary(bimod5)
@@ -986,7 +996,7 @@ plot(fitted(bimod5), bimod5$residuals,
      col="#6496b4", pch = 16)
 abline(0,0, col = "#0059c7")
 ```
-Residual Plots for each of these 5 variables
+Residual Plots for each of these 5 variables. 
 
 
 
