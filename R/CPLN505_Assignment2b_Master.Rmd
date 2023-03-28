@@ -829,8 +829,8 @@ Suspecting that some factors influencing waste water infrastructure need in Phil
 ```{r Dummy variable creation}
 
 cwns2012 <- cwns2012 %>% 
-  mutate(GrowingCity = ifelse(POP10-POP80 > 0, 1, 0)) %>% 
-  mutate(highincome = ifelse(MEDINC09 >= ))
+  mutate(GrowingCity = ifelse(POP10-POP80 > 0, 1, 0))
+  #mutate(highincome = ifelse(MEDINC09 >= ))
 
 ```
 
@@ -879,6 +879,14 @@ cormatrix <- cor(mod_vars) %>%
 corrplot(cormatrix, method = "circle", type = "lower", order = "hclust", 
          tl.col = "black", tl.srt = 45)
 ```
+Based on this cor plot, the following indie vars are colinear and therefore will be mutually exclusive in the steps moving forward.
+Inclusion of one can only occur at the exclusion of the other.
+* res_pop10_dens & res_pop_dens_chng_80_10
+* POP10 & LogPOP10
+* PRES_RES_REC_COLLCTN & PRES_RES_REC_TRMT & proj_change_res_rec_collctn & proj_change_res_rec_trmt
+* PRES_RES_REC_TRMT & ResBurden
+* MEDINC09 & LogMEDINC09 & LogPOP10
+
 ```{r correlations}
 print('res_pop10_dens')
 cor(cwns2012$res_pop10_dens, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
@@ -901,22 +909,35 @@ cor(cwns2012$ResBurden, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method
 print('LogResBurden')
 cor(cwns2012$LogResBurden, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
 print('LogOfficialNeed')
-cor(cwns2012$TOTAL_OFFICIAL_NEED, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+cor(cwns2012$log_TOTAL_NEED, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+print('MEDINC09')
+cor(cwns2012$MEDINC09, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
 print('LogMEDINC09')
 cor(cwns2012$LogMEDINC09, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
 print('CSS')
 cor(cwns2012$CSS, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+print('Growing City')
+cor(cwns2012$GrowingCity, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
 ```
+ResBurden has a correlation of 1 with Total Official Need, meaning Total Official Need is a function of ResBurden. 
+We will therefore exclude ResBurden from our regression analysis moving forward.
 
+PRES_RES_REC_TRMT
+res_pop10_dens
+CSS
+LogPOP10
+PCTWHITE10
+LogMEDINC09
 
-Based on correlation with Total Official Need, and elimination of one of a variable pair when colinearity is present, favoring the one with higher correlation with need, we narrowed down this list of variables to 5 indie vars.
+Based on correlation with Total Official Need, and elimination of one of a variable pair when colinearity is present, favoring the one with higher correlation with need, we narrowed down this list of variables to 6 indie vars.
 
 Final variable list to test:
-* res_pop10_dens (cor with need = 0.42)
 * PRES_RES_REC_TRMT (cor with need = 0.53)
-* LogResBurden (cor with need = 0.39)
+* res_pop10_dens (cor with need = 0.42)
 * CSS (cor with need = 0.20)
+* LogPOP10 (cor with need = 0.18)
 * PCTWHITE10 (cor with need = -0.15)
+* LogMEDINC09 (cor with need = 0.05)
 
 ## Bivariate Regressions
 
@@ -928,77 +949,101 @@ the x-axis and the dependent variable, ‘need’ in this case, on the y-axis). 
 estimates of significant variables. How well do these simple bivariate models perform in
 predicting the various measures of ‘need’?
 
-Testing relationships between each of the variables considered above (minus the variables that exhibit strong colinearity).
+Testing relationships between TOTAL_OFFICIAL_NEED and each of the variables considered above.
 
-Testing relationships between three of the variables considered above which have the highest correlations with need.
+>Want the points to be symmetric above and below the line (homoschedasticity assumption > we want equal variances). This doesn't look ideal because more of the residuals appear to be above the line.
+>Also want to avoid linearity.
+>Google ideal residual plots.
+>Some of the assumptions of linear regression are not met here with regards to homoschedasticity and linearity.
 
-Need vs Residential Population Density 2010
+
+Need vs PRES_RES_REC_TRMT
 ```{r bivariate regression 1}
-bimod1 <- lm(TOTAL_OFFICIAL_NEED ~ res_pop10_dens, data = cwns2012)
+bimod1 <- lm(TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT, data = cwns2012)
 summary(bimod1)
-
-plot(fitted(bimod1), bimod1$residuals,
-     main = "Fitted Model Against Residuals: Population Density",
-     xlab = "Fitted Model 1", ylab = "Residuals",
-     col="#6496b4", pch = 16)
-abline(0,0, col = "#0059c7")
-
 ```
-Want the points to be symmetric above and below the line (homoschedasticity assumption > we want equal variances). This doesn't look ideal because more of the residuals appear to be above the line.
-Also want to avoid linearity.
-Google ideal residual plots.
-Some of the assumptions of linear regression are not met here with regards to homoschedasticity and linearity.
-
 
 ```{r bivariate regression 2}
-bimod2 <- lm(TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT, data = cwns2012)
+bimod2 <- lm(TOTAL_OFFICIAL_NEED ~ res_pop10_dens, data = cwns2012)
 summary(bimod2)
-
-plot(fitted(bimod2), bimod2$residuals,
-     main = "Fitted Model Against Residuals: Residential Receiving Treatment",
-     xlab = "Fitted Model 2", ylab = "Residuals",
-     col="#6496b4", pch = 16)
-abline(0,0, col = "#0059c7")
 ```
 
 ```{r bivariate regression 3}
-bimod3 <- lm(TOTAL_OFFICIAL_NEED ~ LogResBurden, data = cwns2012)
+bimod3 <- lm(TOTAL_OFFICIAL_NEED ~ CSS, data = cwns2012)
 summary(bimod3)
-
-plot(fitted(bimod3), bimod3$residuals,
-     main = "Fitted Model Against Residuals: Log Residential Burden",
-     xlab = "Fitted Model 3", ylab = "Residuals",
-     col="#6496b4", pch = 16)
-abline(0,0, col = "#0059c7")
 ```
-This is happening because looking at need vs. log of need. Don't include this model.
-
 
 ```{r bivariate regression 4}
-bimod4 <- lm(TOTAL_OFFICIAL_NEED ~ CSS, data = cwns2012)
+bimod4 <- lm(TOTAL_OFFICIAL_NEED ~ LogPOP10, data = cwns2012)
 summary(bimod4)
-
-plot(fitted(bimod4), bimod4$residuals,
-     main = "Fitted Model Against Residuals: Combined Sewer System",
-     xlab = "Fitted Model 4", ylab = "Residuals",
-     col="#6496b4", pch = 16)
-abline(0,0, col = "#0059c7")
 ```
-
 
 ```{r bivariate regression 5}
 bimod5 <- lm(TOTAL_OFFICIAL_NEED ~ PCTWHITE10, data = cwns2012)
 summary(bimod5)
-
-plot(fitted(bimod5), bimod5$residuals,
-     main = "Fitted Model Against Residuals: Percent White Population",
-     xlab = "Fitted Model 5", ylab = "Residuals",
-     col="#6496b4", pch = 16)
-abline(0,0, col = "#0059c7")
 ```
-Residual Plots for each of these 5 variables. 
 
+```{r bivariate regression 6}
+bimod6 <- lm(TOTAL_OFFICIAL_NEED ~ LogMEDINC09, data = cwns2012)
+summary(bimod6)
+```
 
+Scatter plots for each of these variables
+
+#Oliver
+```{r Scatter Plot 1}
+ggplot(cwns2012, aes(x=log(PRES_RES_REC_TRMT), y=log(TOTAL_OFFICIAL_NEED))) + 
+  ggtitle("Present Residential Receiving Treatment by Official Need") +
+  xlab("Present Residential Receiving Treatment (Log-Adjusted)") + ylab("Official Need (Log-Adjusted)") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5)+
+  geom_smooth(method=lm, color="#0059c7") +
+  theme_linedraw()
+```
+
+```{r Scatter Plot 2}
+ggplot(cwns2012, aes(x=log(res_pop10_dens), y=log(TOTAL_OFFICIAL_NEED))) + 
+  ggtitle("Residential Population Density by Official Need") +
+  xlab("2010 Residential Population Density (Log-Adjusted)") + ylab("Official Need (Log-Adjusted)") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5)+
+  geom_smooth(method=lm, color="#0059c7") +
+  theme_linedraw()
+```
+
+```{r Scatter Plot 3}
+ggplot(cwns2012, aes(x=CSS, y=log(TOTAL_OFFICIAL_NEED))) + 
+  ggtitle("Combined Sewer System by Official Need") +
+  xlab("Combined Sewer System (CSS)") + ylab("Official Need (Log-Adjusted)") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5)+
+  geom_smooth(method=lm, color="#0059c7") +
+  theme_linedraw()
+```
+
+```{r Scatter Plot 4}
+ggplot(cwns2012, aes(x=LogPOP10, y=log(TOTAL_OFFICIAL_NEED))) + 
+  ggtitle("Population 2010 by Official Need") +
+  xlab("2010 Population (Log-Adjusted)") + ylab("Official Need (Log-Adjusted)") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5)+
+  geom_smooth(method=lm, color="#0059c7") +
+  theme_linedraw()
+```
+
+```{r Scatter Plot 5}
+ggplot(cwns2012, aes(x=log(PCTWHITE10), y=log(TOTAL_OFFICIAL_NEED))) + 
+  ggtitle("Percent White 2010 by Official Need") +
+  xlab("2010 Percent White (Log-Adjusted)") + ylab("Official Need (Log-Adjusted)") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5)+
+  geom_smooth(method=lm, color="#0059c7") +
+  theme_linedraw()
+```
+
+```{r Scatter Plot 6}
+ggplot(cwns2012, aes(x=LogMEDINC09, y=log(TOTAL_OFFICIAL_NEED))) + 
+  ggtitle("Median Income 2009 by Official Need") +
+  xlab("2009 Median Income (Log-Adjusted)") + ylab("Official Need (Log-Adjusted)") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5)+
+  geom_smooth(method=lm, color="#0059c7") +
+  theme_linedraw()
+```
 
 ## Multivariate Regression
 
@@ -1018,17 +1063,10 @@ Try interactions between variables. Do any have significant effects?
 Report the VIF values to convince suspicious readers that you have considered the problem of
 multicollinearity in your analysis.
 
-Based on the results of the correlogram and bivariate regresssions, we create the following variable sets to test with multivariate regressions. We create multiple variable sets to independently test variables that exhibit multi-colinearity but still appear to be significant.
+>OLD
+>Based on the results of the correlogram and bivariate regresssions, we create the following variable sets to test with multivariate regressions. We create multiple variable sets to independently test variables that exhibit multi-colinearity but still appear to be significant.
 
-**Variable Set 1**  
-* TOTAL_OFFICIAL_NEED  
-* res_pop10_dens
-* proj_change_res_rec_trmt (the treatment variable has a **slightly** higher correlation with need than collection)
-* POP10
-* MEDINC09
-* LogResBurden
-* CSS  
-* GrowingCity
+Now we'll see how those variables can give us a model of need through Multivariate Regression
 
 ### Using Backward Selection to Select Variables
 
@@ -1061,13 +1099,14 @@ For our first model, we begin with a selection of all of relevant variables that
 #AIC - oliver to fill out
   # Particularly helpful for backwards selection
 
-mod1.0 <- lm (TOTAL_OFFICIAL_NEED ~ POP10 + res_pop10_dens + MEDINC09 + proj_change_res_rec_trmt + LogResBurden + CSS + GrowingCity, data = cwns2012)
+mod1 <- lm (TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT + res_pop10_dens + CSS + LogPOP10 + PCTWHITE10 + LogMEDINC09, data = cwns2012)
+summary(mod1)
 
-summary(mod1.0)
+
 ```
 
 **Interpret Results of mod1**
-R-squared and adjusted R-squared aren't awful but they could be higher. Median income doesn't seem to be significant. F-statistic p-value is low. Every other variable appears to be significant. Model 1 could perform better, but seems like a good start.
+R-squared and adjusted R-squared aren't awful but they could be higher. PCTWHITE10 doesn't seem to be significant. F-statistic p-value is low. Every other variable appears to be significant. Model 1 could perform better, but seems like a good start.
 
 **Test mod1 for multi-colinearity**
 The VIF for Model 1 reveals that multiple variables exhibit multiple co-linearity. 2010 Population, 2010 residential population density, the interaction between the two, and the interaction between 2010 population and 2009 median income all have VIF values above 5 and square root VIF values above 2.
@@ -1080,30 +1119,28 @@ The VIF for Model 1 reveals that multiple variables exhibit multiple co-linearit
   # Calculate the VIF for X1 as follows:  1/(1 - r2)
   # some people say if VIF>5-10 then you have a problem, 
   # others are more conservative and say if sqrt(vif)>2 then you have a problem
-
-vif(mod1.0) # variance inflation factors 
-sqrt(vif(mod1.0))
+print('VIF')
+vif(mod1) # variance inflation factors 
+print('sqrt(VIF)')
+sqrt(vif(mod1))
 ```
-
 All of our VIFs are less than 2, so we can proceed with confidence that colinearity among these variables is not hindering the model.
 
-**Model 2**
-Now we create a new model based on these results. Growing city dummy variable was removed due to low significance.
+Now we can proceed with backwards selection on this model.
+
+```{r mod 1 back step}
+mod2 <- step(mod1, direction = "backward")
+```
 
 ```{r mod 2}
-mod1.1 <- lm (TOTAL_OFFICIAL_NEED ~ POP10 + res_pop10_dens + MEDINC09 + proj_change_res_rec_trmt + LogResBurden:CSS, data = cwns2012)
-
-summary(mod1.1)
+anova(mod1, mod2)
 ```
+Because the AIC is lower for the model without PCTWHITE10, and the Analysis of Variance Table shows an ???increase in F statistic???, we can confidently proceed with model2, dropping PCTWHITE10.
 
-**Test mod1 for multi-colinearity**
-
-```{r multi-colinearity test2 mod1}
-vif(mod1.1) # variance inflation factors 
-sqrt(vif(mod1.1))
-```
 
 ## Final Model
+
+We chose this model through a gradual narrowing down of variables...
 
 Why we choose this model.
 
