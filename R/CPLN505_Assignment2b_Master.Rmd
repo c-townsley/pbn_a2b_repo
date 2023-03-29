@@ -823,14 +823,16 @@ cwns2012 <- cwns2012 %>%
 
 Suspecting that some factors influencing waste water infrastructure need in Philadelphia may be categorical rather than continuous, we create the following binary dummy variables to include in our models:
 
-* GrowingCity
-* high income?
+* Growing City
+* High Income
 
 ```{r Dummy variable creation}
+library(BAMMtools)
+getJenksBreaks(cwns2012$MEDINC09, 4)
 
 cwns2012 <- cwns2012 %>% 
-  mutate(GrowingCity = ifelse(POP10-POP80 > 0, 1, 0))
-  #mutate(highincome = ifelse(MEDINC09 >= ))
+  mutate(GrowingCity = ifelse(POP10-POP80 > 0, 1, 0)) %>% 
+  mutate(highincome = ifelse(MEDINC09 >= 75415, 1, 0))
 
 ```
 
@@ -853,6 +855,7 @@ Final variable list to test:
 * LogMEDINC09
 * CSS
 * GrowingCity
+* highincome
 
 
 Running pairwise correlations between variables (visualized with the correlogram below) revealed that some of the variables we are interested in testing are highly correlated.  
@@ -869,7 +872,8 @@ The following variables exhibited high degrees of significance with each other:
 mod_vars <- cwns2012 %>% 
   dplyr::select(TOTAL_OFFICIAL_NEED, log_TOTAL_NEED, res_pop10_dens, res_pop_dens_chng_80_10,
                 proj_change_res_rec_trmt, proj_change_res_rec_collctn, POP10, MEDINC09,
-                ResBurden, LogResBurden, PRES_RES_REC_TRMT, PRES_RES_REC_COLLCTN, LogPOP10, LogMEDINC09, PCTWHITE10, CSS, GrowingCity)
+                ResBurden, LogResBurden, PRES_RES_REC_TRMT, PRES_RES_REC_COLLCTN, LogPOP10, LogMEDINC09,
+                PCTWHITE10, CSS, GrowingCity, highincome)
 
 #compute correlation matrix
 cormatrix <- cor(mod_vars) %>% 
@@ -885,7 +889,7 @@ Inclusion of one can only occur at the exclusion of the other.
 * POP10 & LogPOP10
 * PRES_RES_REC_COLLCTN & PRES_RES_REC_TRMT & proj_change_res_rec_collctn & proj_change_res_rec_trmt
 * PRES_RES_REC_TRMT & ResBurden
-* MEDINC09 & LogMEDINC09 & LogPOP10
+* MEDINC09 & LogMEDINC09 & LogPOP10 & highincome
 
 ```{r correlations}
 print('res_pop10_dens')
@@ -918,6 +922,8 @@ print('CSS')
 cor(cwns2012$CSS, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
 print('Growing City')
 cor(cwns2012$GrowingCity, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
+print('High Income')
+cor(cwns2012$highincome, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
 ```
 ResBurden has a correlation of 1 with Total Official Need, meaning Total Official Need is a function of ResBurden. 
 We will therefore exclude ResBurden from our regression analysis moving forward.
@@ -938,6 +944,14 @@ Final variable list to test:
 * LogPOP10 (cor with need = 0.18)
 * PCTWHITE10 (cor with need = -0.15)
 * LogMEDINC09 (cor with need = 0.05)
+
+Second variable list:
+* PRES_RES_REC_TRMT (cor with need = 0.53)
+* res_pop10_dens (cor with need = 0.42)
+* CSS (cor with need = 0.20)
+* LogPOP10 (cor with need = 0.18)
+* PCTWHITE10 (cor with need = -0.15)
+* highincome (cor with need = 0.03)
 
 ## Bivariate Regressions
 
@@ -990,7 +1004,6 @@ summary(bimod6)
 
 Scatter plots for each of these variables
 
-#Oliver
 ```{r Scatter Plot 1}
 ggplot(cwns2012, aes(x=log(PRES_RES_REC_TRMT), y=log(TOTAL_OFFICIAL_NEED))) + 
   ggtitle("Present Residential Receiving Treatment by Official Need") +
@@ -1070,7 +1083,8 @@ Now we'll see how those variables can give us a model of need through Multivaria
 
 ### Using Backward Selection to Select Variables
 
-**Model 1**
+#### Model 1
+
 For our first model, we begin with a selection of all of relevant variables that do not exhibit multi-collinearity according to our correlation tests.
 
 ```{r multivariate regresssion model 1}
@@ -1096,8 +1110,6 @@ For our first model, we begin with a selection of all of relevant variables that
   # If the p-value associated with the F-stat is ≥ 0.05 Then there is no relationship between ANY of the
   # independent variables and Y.
   # If the p-value associated with the F-statistic < 0.05 then AT LEAST 1 independent variable is related to Y.
-#AIC - oliver to fill out
-  # Particularly helpful for backwards selection
 
 mod1 <- lm (TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT + res_pop10_dens + CSS + LogPOP10 + PCTWHITE10 + LogMEDINC09, data = cwns2012)
 summary(mod1)
@@ -1109,7 +1121,7 @@ summary(mod1)
 R-squared and adjusted R-squared aren't awful but they could be higher. PCTWHITE10 doesn't seem to be significant. F-statistic p-value is low. Every other variable appears to be significant. Model 1 could perform better, but seems like a good start.
 
 **Test mod1 for multi-colinearity**
-The VIF for Model 1 reveals that multiple variables exhibit multiple co-linearity. 2010 Population, 2010 residential population density, the interaction between the two, and the interaction between 2010 population and 2009 median income all have VIF values above 5 and square root VIF values above 2.
+The VIF for Model 1 reveals that that the model's variables do not exhibit multi-colinearity. The VIF values for all the model's variables are below 5 and their square root VIF values are below 2.
 
 ```{r multi-colinearity test mod1}
 #variance inflation factor (VIF)
@@ -1124,18 +1136,78 @@ vif(mod1) # variance inflation factors
 print('sqrt(VIF)')
 sqrt(vif(mod1))
 ```
-All of our VIFs are less than 2, so we can proceed with confidence that colinearity among these variables is not hindering the model.
+So, we can proceed with confidence that colinearity among these variables is not hindering the model.
+
+#### Model 2
 
 Now we can proceed with backwards selection on this model.
 
 ```{r mod 1 back step}
+#AIC
+  # Particularly helpful for backwards selection
+  # it's a measure of the quality of a model and used to pick a model from many. 
+  # AIC is all relative - just tells you what's the best one you have. 
+  # the preferred model has the lowest AIC. And AIC increases with the number of explanatory variables.
 mod2 <- step(mod1, direction = "backward")
 ```
+The AIC is lower for the model without PCTWHITE10, showing that a model without PCTWHITE10 has a better fit with the data.
 
-```{r mod 2}
+and the Analysis of Variance Table shows an ???increase in F statistic???, we can confidently proceed with model2, dropping PCTWHITE10.
+
+```{r mod 2 anova}
 anova(mod1, mod2)
 ```
-Because the AIC is lower for the model without PCTWHITE10, and the Analysis of Variance Table shows an ???increase in F statistic???, we can confidently proceed with model2, dropping PCTWHITE10.
+The large p-value associated with model 2 suggests it does not perform better than model 1.
+
+```{r mod 2 summary}
+summary(mod2)
+```
+Dropping PCTWHITE10 also did not change the model's r-squared at all.
+
+
+#### Model 3
+
+What if we replace median income with our binary high income variable?
+
+```{r mod 3}
+mod3 <- lm (TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT + res_pop10_dens + CSS + LogPOP10 + highincome, data = cwns2012)
+summary(mod3)
+```
+The r-squared improves slightly.
+
+```{r multi-colinearity test mod3}
+print('VIF')
+vif(mod3) # variance inflation factors 
+print('sqrt(VIF)')
+sqrt(vif(mod3))
+```
+And we've avoided co-linearity.
+
+```{r mod 3 back step}
+#AIC
+  # Particularly helpful for backwards selection
+  # it's a measure of the quality of a model and used to pick a model from many. 
+  # AIC is all relative - just tells you what's the best one you have. 
+  # the preferred model has the lowest AIC. And AIC increases with the number of explanatory variables.
+step(mod3, direction = "backward")
+```
+Backward selection tells us the model's fit is better with high income included than without.
+
+```{r mod 3 anova}
+anova(mod1, mod2, mod3)
+```
+Anova suggests there is not a statistically meaningful difference between models 1 and 3 (model 2 is the least significant) but the slightly higher r-squared suggests model 3 is the best yet.
+
+#### Model 4
+
+What if we try interacting terms?
+
+```{r mod 4}
+mod4 <- lm (TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT + res_pop10_dens + CSS + LogPOP10 + highincome,
+            data = cwns2012)
+summary(mod4)
+```
+
 
 
 ## Final Model
