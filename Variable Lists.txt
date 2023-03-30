@@ -1,0 +1,71 @@
+Variable Lists
+
+Variables completed excluded (6):
+* medinc_prcnt_chng_69_09
+* res_pop_dens_prcnt_chng_80_10
+* proj_prcntchng_res_rec_trmt
+* proj_prcntchng_res_rec_collctn
+* proj_prcntchng_n_res_rec_trmt
+* proj_prcntchng_n_res_rec_collctn
+
+The following 12 variables exhibited measurable correlation with need (in ascending order):
+* MEDINC09
+* PCTWHITE10
+* proj_chng_n_res_rec_trmt
+* proj_chng_n_res_rec_collctn
+* POP10
+* CSS
+* proj_change_res_rec_collctn
+* proj_change_res_rec_trmt
+* res_pop_dens_chng_80_10 (data seems widely distributed...)
+* res_pop10_dens (data seems widely distributed...)
+* PRES_RES_REC_COLLCTN
+* PRES_RES_REC_TRMT
+
+Final variable list to test:
+* res_pop10_dens  
+* res_pop_dens_chng_80_10 
+* proj_change_res_rec_trmt
+* proj_change_res_rec_collctn
+* POP10
+* MEDINC09
+* PRES_RES_REC_TRMT
+* PRES_RES_REC_COLLCTN
+* PCTWHITE10
+* ResBurden  
+* LogResBurden  
+* LogOfficialNeed  
+* LogPOP10
+* LogMEDINC09
+* CSS
+* GrowingCity
+* lowincome
+* lrgcity
+
+colinear vars:
+* res_pop10_dens & res_pop_dens_chng_80_10
+* POP10 & LogPOP10
+* PRES_RES_REC_COLLCTN & PRES_RES_REC_TRMT & proj_change_res_rec_collctn & proj_change_res_rec_trmt
+* PRES_RES_REC_TRMT & ResBurden
+* MEDINC09 & LogMEDINC09 & LogPOP10
+* MEDINC09 & LogMEDINC09 & lowincome
+
+-----------------------------------------------
+
+Final variable list to test:
+* PRES_RES_REC_TRMT (cor with need = 0.53)
+* res_pop10_dens (cor with need = 0.42)
+* CSS (cor with need = 0.20)
+* LogPOP10 (cor with need = 0.18)
+* PCTWHITE10 (cor with need = -0.15)
+* LogMEDINC09 (cor with need = 0.05)
+* GrowingCity (cor with need = .04)
+
+Second variable list to test:
+* PRES_RES_REC_TRMT (cor with need = 0.53)
+* res_pop10_dens (cor with need = 0.42)
+* CSS (cor with need = 0.20)
+* LogPOP10 (cor with need = 0.18)
+* PCTWHITE10 (cor with need = -0.15)
+* lowincome (cor with need = -0.05)
+
