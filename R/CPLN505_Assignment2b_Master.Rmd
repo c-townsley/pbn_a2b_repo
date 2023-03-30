@@ -1346,6 +1346,7 @@ What if we replace median income with our binary low income variable?
 mod3 <- lm (TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT + res_pop10_dens + CSS + LogPOP10 + lowincome + GrowingCity, data = cwns2012)
 summary(mod3)
 ```
+
 The r-squared got slightly worse. What does automated backward selection tell us?
 
 ```{r mod 3 back step}
@@ -1391,9 +1392,9 @@ The VIF for Model 1 reveals that that the model's variables do not exhibit multi
   # some people say if VIF>5-10 then you have a problem, 
   # others are more conservative and say if sqrt(vif)>2 then you have a problem
 print('VIF')
-vif(mod1) # variance inflation factors 
+vif(mod4) # variance inflation factors 
 print('sqrt(VIF)')
-sqrt(vif(mod1))
+sqrt(vif(mod4))
 ```
 So, we can proceed with confidence that colinearity among these variables is not hindering the model.
 
