@@ -34,6 +34,8 @@ rm(list=ls())
 #install.packages("corrplot")
 #install.packages("Hmisc")
 #install.packages("car")
+#install.packages("BAMMtools")
+#install.packages("broom")
 
 #run every session
 library(tidyverse)
@@ -49,6 +51,7 @@ library(Hmisc)
 library(car)
 library(gridExtra)
 library(BAMMtools)
+library(broom)
 
 #set colors
 palette <- c("#a02300", "#0059c7", "#6496b4", "#E1B93C")
@@ -1199,6 +1202,7 @@ ggplot(cwns2012, aes(x=log(PCTWHITE10), y=log(TOTAL_OFFICIAL_NEED))) +
 bimod5 <- lm(TOTAL_OFFICIAL_NEED ~ PCTWHITE10, data = cwns2012)
 summary(bimod5)
 ```
+
 ```{r Scatter Plot 6}
 ggplot(cwns2012, aes(x=LogMEDINC09, y=log(TOTAL_OFFICIAL_NEED))) + 
   ggtitle("Median Income 2009 by Official Need") +
@@ -1308,7 +1312,6 @@ mod1 <- lm (TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT + res_pop10_dens + CSS + Log
               PCTWHITE10 + LogMEDINC09 + GrowingCity, data = cwns2012)
 summary(mod1)
 
-
 ```
 
 **Interpreting the Results of mod1**
@@ -1395,6 +1398,18 @@ print('VIF')
 vif(mod4) # variance inflation factors 
 print('sqrt(VIF)')
 sqrt(vif(mod4))
+```
+
+```{r plot residuals}
+
+mod4_resid <- augment(mod4)
+
+ggplot(mod4_resid, aes(x = .fitted, y = .resid)) + 
+  ggtitle("Final Regression Model Residuals") +
+  xlab("Fitted") + ylab("Residuals") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "#a02300")
+
 ```
 So, we can proceed with confidence that colinearity among these variables is not hindering the model.
 
