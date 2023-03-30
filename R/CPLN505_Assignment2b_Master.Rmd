@@ -1413,11 +1413,39 @@ ggplot(mod4_resid, aes(x = .fitted, y = .resid)) +
 ```
 So, we can proceed with confidence that colinearity among these variables is not hindering the model.
 
-We chose this model through a gradual narrowing down of variables...
-
-Why we choose this model.
+We chose this model through a gradual narrowing down of variables in multiple phases.
 
 Describe coefficients (for each 1 unit increase in these variables, we expect the following change in total need).
+
+The interpretations of the results of our final model (mod4) are as follows:
+Furthermore, the very low p-values of PRES_RES_REC_TRMT and res_pop10_dens:CSS mean that they both have very high statistical significance - PRES_RES_REC_TRMT and res_pop10_dens:CSS are both good predictors of TOTAL_OFFICIAL_NEED.
+
+* PRES_RES_REC_TRMT
+To speak more specifically about the results of this model, all else equal, for each one unit increase in present residential receiving treatment (PRES_RES_REC_TRMT), there is a $560.2 increase in Official Need (TOTAL_OFFICIAL_NEED).
+
+* res_pop10_dens:CSS
+Since "CSS" is a binary variable based on the presence or absence of a combined sewer system, the interaction term (res_pop10_dens:CSS) captures the effect of how the relationship between "res_pop10_dens" and "TOTAL_OFFICIAL_NEED" varies depending on whether or not the region has a combined sewer system.
+
+So, all else equal, the effect of population density on "TOTAL_OFFICIAL_NEED" is stronger in regions with a combined sewer system compared to regions without a combined sewer system.
+
+* GrowingCity
+The predictor variable GrowingCity may also have some statistical significance, indicated by its somewhat low p-value of 0.0556. This p-value is slightly above the commonly used significance threshold of 0.05. This means that there is a small possibility that this relationship could be due to chance.
+
+This dummy variable is based on whether or not a city is growing. The coefficient of GrowingCity indicated in the results of this model can be interpreted to mean that cities that are growing have a higher "TOTAL_OFFICIAL_NEED" value by approximately $5.3 million, compared to cities that are not growing.
+
+* Overall Model
+The r-squared value of this model is 0.3897, which means that the predictor variables explain about 39% of the variability in the response variable (TOTAL_OFFICIAL_NEED).
+
+In summary, the results of this model are of significance to cities with higher than average population density, combined sewers, large numbers of present residences receiving treatment, and cities that are growing. Philly fits all of these descriptors. Furthermore, Philly's population density and residences receiving treatment are projected to increase, and Philly is a growing city with a CSS. This makes clear that Philly's need for water infrastructure investment, while currently quite high, will only continue to increase in the future. Investment in this infrastructure is an absolute MUST!
+
+
+
+PRES_RES_REC_TRMT   5.602e+02  1.152e+01  48.628   <2e-16 ***
+LogPOP10            1.392e+06  9.075e+05   1.534   0.1251    
+LogMEDINC09        -9.061e+06  5.713e+06  -1.586   0.1127    
+GrowingCity         5.271e+06  2.753e+06   1.915   0.0556 .  
+res_pop10_dens:CSS  9.526e+04  2.489e+03  38.274   <2e-16 ***
+
 
 Provide diagnosis of residuals vs. fitted
 
