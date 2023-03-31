@@ -1352,6 +1352,18 @@ summary(mod3)
 
 The r-squared got slightly worse. What does automated backward selection tell us?
 
+```{r mod3 residuals}
+mod3_resid <- augment(mod3)
+
+ggplot(mod3_resid, aes(x = .fitted, y = .resid)) + 
+  ggtitle("Model 3 Residuals") +
+  xlab("Fitted") + ylab("Residuals") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "#a02300") + 
+  theme_bw()
+```
+
+
 ```{r mod 3 back step}
 #AIC
   # Particularly helpful for backwards selection
@@ -1372,10 +1384,10 @@ mod4 <- lm (TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT + res_pop10_dens:CSS + LogPO
             data = cwns2012)
 summary(mod4)
 ```
-Interacting 'res_pop10_dens' with 'css' improves the fit but a number of variables lose their significance. What happens if we drop the least significant term? In this case, 'LogPOP10'.
+Interacting 'res_pop10_dens' with 'css' improves the fit, but a number of variables lose their significance. What happens if we drop all non-significant terms? In this case, 'LogPOP10', 'LogMEDINC09', and 'GrowingCity'.
 
-```{r mod4 step}
-mod5 <- lm (TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT + res_pop10_dens:CSS + LogMEDINC09 + GrowingCity,
+```{r mod5}
+mod5 <- lm (TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT + res_pop10_dens:CSS,
             data = cwns2012)
 summary(mod5)
 ```
@@ -1387,13 +1399,6 @@ summary(mod5)
 The VIF for Model 1 reveals that that the model's variables do not exhibit multi-colinearity. The VIF values for all the model's variables are below 5 and their square root VIF values are below 2.
 
 ```{r multi-colinearity test mod1}
-#variance inflation factor (VIF)
-  # Index of how a coefficient variance increases due to colinearity.
-  # VIF calculates how correlated the variable is with all the other variables in the model.
-  # Mechanics: Regress X1 on X2, calculate r2 of this relationship
-  # Calculate the VIF for X1 as follows:  1/(1 - r2)
-  # some people say if VIF>5-10 then you have a problem, 
-  # others are more conservative and say if sqrt(vif)>2 then you have a problem
 print('VIF')
 vif(mod4) # variance inflation factors 
 print('sqrt(VIF)')
@@ -1405,12 +1410,29 @@ sqrt(vif(mod4))
 mod4_resid <- augment(mod4)
 
 ggplot(mod4_resid, aes(x = .fitted, y = .resid)) + 
-  ggtitle("Final Regression Model Residuals") +
+  ggtitle("Model 4 Residuals") +
   xlab("Fitted") + ylab("Residuals") +
   geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "#a02300")
+  geom_hline(yintercept = 0, linetype = "dashed", color = "#a02300") + 
+  theme_bw()
+
+mod5_resid <- augment(mod5)
+
+ggplot(mod5_resid, aes(x = .fitted, y = .resid)) + 
+  ggtitle("Model 5 Residuals") +
+  xlab("Fitted") + ylab("Residuals") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "#a02300") + 
+  theme_bw()
 
 ```
+>Want the points to be symmetric above and below the line (homoschedasticity assumption > we want equal variances). This doesn't look ideal because more of the residuals appear to be above the line.
+>Also want to avoid linearity.
+>Google ideal residual plots.
+>Some of the assumptions of linear regression are not met here with regards to homoschedasticity and linearity.
+
+These plots exhibit heteroscedasticity, because the residuals get large as the predicted values move from small to large.
+
 So, we can proceed with confidence that colinearity among these variables is not hindering the model.
 
 We chose this model through a gradual narrowing down of variables in multiple phases.
