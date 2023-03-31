@@ -36,6 +36,7 @@ rm(list=ls())
 #install.packages("car")
 #install.packages("BAMMtools")
 #install.packages("broom")
+#install.packages("stargazer")
 
 #run every session
 library(tidyverse)
@@ -52,6 +53,7 @@ library(car)
 library(gridExtra)
 library(BAMMtools)
 library(broom)
+library(stargazer)
 
 #set colors
 palette <- c("#a02300", "#0059c7", "#6496b4", "#E1B93C")
@@ -1125,6 +1127,9 @@ Second variable list to test:
 * PCTWHITE10 (cor with need = -0.15)
 * lowincome (cor with need = -0.05)
 
+
+
+
 ## Bivariate Regressions
 
 We then ran bivariate regressions to further clarify the relationships between 'TOTAL_OFFICIAL_NEED' and each of the variables considered above.
@@ -1233,7 +1238,7 @@ bimod7 <- lm(TOTAL_OFFICIAL_NEED ~ GrowingCity, data = cwns2012)
 summary(bimod7)
 ```
 
-```{r Scatter Plot 7}
+```{r Scatter Plot 8}
 ggplot(cwns2012, aes(x=lowincome, y=log(TOTAL_OFFICIAL_NEED))) + 
   ggtitle("Low Income City by Official Need") +
   xlab("Low Income") + ylab("Official Need (Log-Adjusted)") +
@@ -1253,28 +1258,11 @@ summary(bimod8)
 
 ## Multivariate Regression
 
-> From the homework, delete when done:
-
-> Build multivariate regressions for each of the measures of ‘need’. Explain the use of, and report
-the results of automated variable selection techniques, such as Forward and Backward Selection.
-
-> In your final models for each of the measures of ‘need’, report which variables you chose to
-include in your final “leanest and meanest” models, interpret the significant coefficients of the
-final models. Make sure that you interpret interesting results in full sentences, as well as
-presenting regression results in a table summarizing your work. Compare models against each
-other, using R squared values and F-tests.
-
-> Remember to take care in interpreting log-transformed variables.
-Try interactions between variables. Do any have significant effects?
-Report the VIF values to convince suspicious readers that you have considered the problem of
-multicollinearity in your analysis.
-
-Now we'll see how those variables can give us a model of need through Multivariate Regression
-
+Finally, we run a series of multivariate regressions to measure the degree to which the independent variables we hypothesized to be significant are linearly related to need.
 
 ### Model 1
 
-For our first model, we begin with a selection of all of relevant variables that do not exhibit multi-collinearity according to our correlation tests:
+For our first model, we begin with a selection of all our hypothesized significant variables that do not exhibit multi-collinearity according to our correlation tests:
 
 * PRES_RES_REC_TRMT (cor with need = 0.53)
 * res_pop10_dens (cor with need = 0.42)
@@ -1313,14 +1301,15 @@ mod1 <- lm (TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT + res_pop10_dens + CSS + Log
 summary(mod1)
 
 ```
+**Interpreting the Results of Model 1**
+The R-squared and adjusted R-squared tell us this first model describes ~37% of the variance in our data. There is room for improvement, but we are capturing some significant relationships. The p-value associated with the model's F-statistic is low, which tells us the model describes the data better than the mean. Every variable tested appears to be significant except for 'PCTWHITE10'. Therefore, Model 1 could perform better, but seems like a promising start.
 
-**Interpreting the Results of mod1**
-The model's R-squared and adjusted R-squared aren't awful, but they could be higher. PCTWHITE10 isn't significant to the model. The p-value associated with the F-statistic is low, which is good. Every other variable appears to be significant. Model 1 could perform better, but seems like a good start.
+
 
 
 ### Model 2
 
-Now we can employ automated step wise backwards selection on this model to see which, if any variables we can drop. The results tell us we can drop 'PCTWHITE10' because the AIC is lower for the model when it is not included, showing that a model without PCTWHITE10 has a better fit with the data. This gives us model 2.
+Next, we employ automated backwards selection on model 1 to see which, if any variables we can drop to improve the fit and efficiency of the model. We choose backwards selection, rather than forwards selection, because it allows us to use the entire variable list we developed previously as our starting point. This is preferable to forward selection, which would have required us to arbitrarily pick and then build off of a starting variable.
 
 ```{r mod 1 back step}
 #AIC
@@ -1330,18 +1319,22 @@ Now we can employ automated step wise backwards selection on this model to see w
   # the preferred model has the lowest AIC. And AIC increases with the number of explanatory variables.
 mod2 <- step(mod1, direction = "backward")
 ```
-
-Comparing 'mod1' and 'mod2' with an analysis of Variance Table gives a p-value much larger than the 0.05 threshold for statistically significant difference between the model's means. Therefore, while 'mod2''s AIC suggests it performs slightly better, running ANOVA suggests the models don't perform differently from eachother in a meaningful way.
+The results of automated backwards selection tell us we can drop 'PCTWHITE10' because the AIC is lower for the model when it is not included, showing that a model without PCTWHITE10 has a better fit with the data. This gives us 'mod2'.
 
 ```{r mod 2 anova}
 anova(mod1, mod2)
 ```
-Looking at 'mod2''s r-squared values, we see they are in fact the same as 'mod1'. This means at the very least it is not worth keeping PCTWHITE10 in the model.
+Comparing 'mod1' and 'mod2' with an analysis of Variance Table gives a p-value much larger than the 0.05 threshold for statistically significant difference between the model's means. Therefore, while 'mod2''s AIC suggests it performs slightly better, running ANOVA suggests the models don't perform differently from eachother in a meaningful way.
+
 ```{r mod 2 summary}
 summary(mod2)
 ```
+Looking at 'mod2''s r-squared values, we see they are in fact the same as 'mod1'. This means at the very least it is not worth keeping PCTWHITE10 in the model.
 
-#### Model 3
+
+
+
+### Model 3
 
 What if we replace median income with our binary low income variable?
 
@@ -1349,20 +1342,7 @@ What if we replace median income with our binary low income variable?
 mod3 <- lm (TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT + res_pop10_dens + CSS + LogPOP10 + lowincome + GrowingCity, data = cwns2012)
 summary(mod3)
 ```
-
 The r-squared got slightly worse. What does automated backward selection tell us?
-
-```{r mod3 residuals}
-mod3_resid <- augment(mod3)
-
-ggplot(mod3_resid, aes(x = .fitted, y = .resid)) + 
-  ggtitle("Model 3 Residuals") +
-  xlab("Fitted") + ylab("Residuals") +
-  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "#a02300") + 
-  theme_bw()
-```
-
 
 ```{r mod 3 back step}
 #AIC
@@ -1372,12 +1352,14 @@ ggplot(mod3_resid, aes(x = .fitted, y = .resid)) +
   # the preferred model has the lowest AIC. And AIC increases with the number of explanatory variables.
 step(mod3, direction = "backward")
 ```
-Backward selection tells us the model's fit is better with low income included than without.
+Backward selection tells us the model's fit is better with low income included than without. But, since 'lowincome' and 'LogMEDINC09' can't be in the same model and the r-squared was higher for the model with 'LogMEDINC09' we choose to move forward with the original income variable rather than the low income dummy variable.
 
 
-#### Model 4
 
-What if we try interacting terms from model 2?
+
+### Model 4
+
+What if we try interacting terms from model 2 instead?
 
 ```{r mod 4}
 mod4 <- lm (TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT + res_pop10_dens:CSS + LogPOP10 + LogMEDINC09 + GrowingCity,
@@ -1386,93 +1368,104 @@ summary(mod4)
 ```
 Interacting 'res_pop10_dens' with 'css' improves the fit, but a number of variables lose their significance. What happens if we drop all non-significant terms? In this case, 'LogPOP10', 'LogMEDINC09', and 'GrowingCity'.
 
+
+
+
+### Model 5
+
 ```{r mod5}
-mod5 <- lm (TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT + res_pop10_dens:CSS,
+mod5 <- lm (TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT + CSS + res_pop10_dens:CSS,
             data = cwns2012)
 summary(mod5)
 ```
+Dropping these three variables only reduces the r-squared of 'mod5' by 0.0005 and the adjusted r-squared by 0.0003. Also, the p-values associated with the f-statistic of the two models also stays the same, therefore, 'mod5' is a leaner and almost as mean model as 'mod4' that performs effectively just as well but doesn't carry the weight of insignificant variables.
 
 
-## Final Model
 
-**Test Final Model for multi-colinearity**
-The VIF for Model 1 reveals that that the model's variables do not exhibit multi-colinearity. The VIF values for all the model's variables are below 5 and their square root VIF values are below 2.
 
-```{r multi-colinearity test mod1}
-print('VIF')
-vif(mod4) # variance inflation factors 
-print('sqrt(VIF)')
-sqrt(vif(mod4))
+### Model Selection
+
+In order to select our final model, we create a table of each of the five models to compare their fitness (below). The table shows that models 4 and 5 are our best models. They have the highest r-squared and adjusted r-squared values, the lowest residual standard errors, and the largest F Statistics. We select model 5 as our final model because it achieves equal performance to model 4 with fewer variables and has the highest F Statistic of any of our models.
+
+```{r stargazer, results='asis'}
+stargazer(mod1, mod2, mod3, mod4, mod5, type="html", digits = 2, single.row = FALSE)
 ```
 
-```{r plot residuals}
 
-mod4_resid <- augment(mod4)
+```{r multi-colinearity test mod5}
+print('VIF')
+vif(mod5) # variance inflation factors 
+print('sqrt(VIF)')
+sqrt(vif(mod5))
+```
+Finally, we check the VIF for Model 5 to ensure we have not selected a final model that has colinear independent variables. This test shows that the model's variables do not exhibit multi-colinearity because all of their VIF values are below 5 and their square root VIF values are below 2.
 
-ggplot(mod4_resid, aes(x = .fitted, y = .resid)) + 
-  ggtitle("Model 4 Residuals") +
-  xlab("Fitted") + ylab("Residuals") +
-  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "#a02300") + 
-  theme_bw()
+
+
+
+### Final Model: Model 5
+
+After examining the relationship between total budgeted facility need and what feels like countless variables for this assignment, it seems surprising that just three variables describe variation in need better than any other combination we tested. However, when we think about which variables they are and the fact that the data is national, the results of our process make more sense.
+
+The process in question, in which we went from a total of 48 potentially significant independent variables down to 7 to run multivariate regressions on, and eventually down to the 3 most significant, revealed that present residential population receiving treatment, residential population density, and presence of a combined sewer system are key drivers of wastewater facility budgetary need in the United States.
+
+Independent Vars.  | Estimate    | Std. Error | t value | Pr(>|t|)   
+------------------ | ----------- | ---------- | ------- | ---------------------
+(Intercept)        | 2,966,000  | 1211000    |   2.449 |  0.0144 
+PRES_RES_REC_TRMT  | $560        | 11.1       | 50.460  | < 0.00000000000000002
+CSS                | $23,550,000 | 4344000    | 5.421   | 0.0000000608
+CSS:res_pop10_dens | 91,830      | 2566       | 35.786  | < 0.00000000000000002
+
+Specifically, the coefficients of our final model (shown in the table above) predict that:
+
+* **For every 1 unit increase in residential population receiving treatment, all else equal, we can expect a $565 increase in facility budgetary need.** While this value may seem relatively small, it grows quickly. Especially when considering facilities like Philadelphia's which serve an average of 760,534 people. If an additional 1,000 people move into that district, we predict that facility's need to increase by $565,000.
+
+* Since "CSS" is a binary variable based on the presence or absence of a combined sewer system, and the interaction between CSS and residential population density is highly significant (due to its small p-value), **the effect of residential population density on budgeted facility need is only significant when that facility has a CSS.**
+
+* Because CSS is a binary dummy variable, we interpret its standalone coefficient differently. It tells us that **the average increase in need for facilities with a CSS instead of MS4 is a shocking $23,550,000.**
+
+* *It is also important to recognize that the effect of CSS on the model is shaped by its interaction with residential population density. In this model, when combined sewers are not present (CSS = 0) the slope of the regression line equals the coefficient for 'PRES_RES_REC_TRMT'.*
+
+
+**Overall Model**
+The r-squared value of this model is 0.3915, which means that the predictor variables explain about 39% of the variability in the response variable (TOTAL_OFFICIAL_NEED).
+
+```{r plot residuals mod 5, fig.width=7}
+#fitted values are predicted values (in this case, need)
 
 mod5_resid <- augment(mod5)
 
-ggplot(mod5_resid, aes(x = .fitted, y = .resid)) + 
+gg5resfull <- ggplot(mod5_resid, aes(x = .fitted, y = .resid)) + 
   ggtitle("Model 5 Residuals") +
   xlab("Fitted") + ylab("Residuals") +
   geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "#a02300") + 
+  geom_vline(aes(xintercept=mean(TOTAL_OFFICIAL_NEED)), color="#E1B93C") +
+  geom_vline(aes(xintercept=mean(philly_facilities$TOTAL_OFFICIAL_NEED)), color="#a02300") +
   theme_bw()
 
+gg5rescut <- ggplot(mod5_resid, aes(x = .fitted, y = .resid)) + 
+  ggtitle("Model 5 Residuals (Cropped)") +
+  xlab("Fitted") + ylab("Residuals") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "#a02300") + 
+  geom_vline(aes(xintercept=mean(TOTAL_OFFICIAL_NEED)), color="#E1B93C") +
+  geom_vline(aes(xintercept=mean(philly_facilities$TOTAL_OFFICIAL_NEED)), color="#a02300") +
+  xlim(0, 200000000) +
+  theme_bw()
+
+grid.arrange(gg5resfull, gg5rescut, ncol = 2)
+
 ```
->Want the points to be symmetric above and below the line (homoschedasticity assumption > we want equal variances). This doesn't look ideal because more of the residuals appear to be above the line.
->Also want to avoid linearity.
->Google ideal residual plots.
->Some of the assumptions of linear regression are not met here with regards to homoschedasticity and linearity.
+Plotting the residuals against the predicted or "fitted" values of our final model reveals a clustering around lower values, or heteroscedasticity. Plotting the residuals of an ideal model would show homoscedasticity - a random yet equal distribution around the regression line. The heteroscedasticity in our model means it predicts better (is more accurate) at low values of need than at high ones.
 
-These plots exhibit heteroscedasticity, because the residuals get large as the predicted values move from small to large.
+The above plots show mean facility need in the United States with a vertical yellow line and mean facility need for Philadelphia with a red line. The plot on the left includes the full range of data and shows that unfortunately the model does not predict very accurately when need is in the range of Philadelphia's. However, the zoomed in plot on the right shows that the residuals are much more symmetric around the regression line for values closer to mean U.S. facility need. This suggests that our model is useful for estimating need in cities with average need.
 
-So, we can proceed with confidence that colinearity among these variables is not hindering the model.
-
-We chose this model through a gradual narrowing down of variables in multiple phases.
-
-Describe coefficients (for each 1 unit increase in these variables, we expect the following change in total need).
-
-The interpretations of the results of our final model (mod4) are as follows:
-Furthermore, the very low p-values of PRES_RES_REC_TRMT and res_pop10_dens:CSS mean that they both have very high statistical significance - PRES_RES_REC_TRMT and res_pop10_dens:CSS are both good predictors of TOTAL_OFFICIAL_NEED.
-
-* PRES_RES_REC_TRMT
-To speak more specifically about the results of this model, all else equal, for each one unit increase in present residential receiving treatment (PRES_RES_REC_TRMT), there is a $560.2 increase in Official Need (TOTAL_OFFICIAL_NEED).
-
-* res_pop10_dens:CSS
-Since "CSS" is a binary variable based on the presence or absence of a combined sewer system, the interaction term (res_pop10_dens:CSS) captures the effect of how the relationship between "res_pop10_dens" and "TOTAL_OFFICIAL_NEED" varies depending on whether or not the region has a combined sewer system.
-
-So, all else equal, the effect of population density on "TOTAL_OFFICIAL_NEED" is stronger in regions with a combined sewer system compared to regions without a combined sewer system.
-
-* GrowingCity
-The predictor variable GrowingCity may also have some statistical significance, indicated by its somewhat low p-value of 0.0556. This p-value is slightly above the commonly used significance threshold of 0.05. This means that there is a small possibility that this relationship could be due to chance.
-
-This dummy variable is based on whether or not a city is growing. The coefficient of GrowingCity indicated in the results of this model can be interpreted to mean that cities that are growing have a higher "TOTAL_OFFICIAL_NEED" value by approximately $5.3 million, compared to cities that are not growing.
-
-* Overall Model
-The r-squared value of this model is 0.3897, which means that the predictor variables explain about 39% of the variability in the response variable (TOTAL_OFFICIAL_NEED).
-
-In summary, the results of this model are of significance to cities with higher than average population density, combined sewers, large numbers of present residences receiving treatment, and cities that are growing. Philly fits all of these descriptors. Furthermore, Philly's population density and residences receiving treatment are projected to increase, and Philly is a growing city with a CSS. This makes clear that Philly's need for water infrastructure investment, while currently quite high, will only continue to increase in the future. Investment in this infrastructure is an absolute MUST!
+>In summary, the results of this model are of significance to cities with large large numbers of present residences receiving treatment, combined sewers, and higher than average population density. Philly fits all of these descriptors. The city's population density and residences receiving treatment are projected to increase, and it has a CSS. This makes clear that Philly's need for water infrastructure investment, while currently quite high, will only continue to increase in the future. Therefore, investment in this infrastructure is an absolute MUST!
 
 
 
-PRES_RES_REC_TRMT   5.602e+02  1.152e+01  48.628   <2e-16 ***
-LogPOP10            1.392e+06  9.075e+05   1.534   0.1251    
-LogMEDINC09        -9.061e+06  5.713e+06  -1.586   0.1127    
-GrowingCity         5.271e+06  2.753e+06   1.915   0.0556 .  
-res_pop10_dens:CSS  9.526e+04  2.489e+03  38.274   <2e-16 ***
 
 
-Provide diagnosis of residuals vs. fitted
-
-Interpretation: what factors relate to total official need? How does they relate to total official need in Philly?
-
-What does this tell us about wastewater facility need nationally and in Philadelphia?
 
 
