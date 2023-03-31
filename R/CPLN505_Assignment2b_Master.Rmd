@@ -850,16 +850,20 @@ Present residential receiving treatment has the highest overall correlation with
 cor(cwns2012$PRES_RES_REC_TRMT, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
 ```
 
+***
 
 
 
-# Part IIb
 
-The second phase of this project was to better understand the relationships between the variables we started in Part I and need by running bivariate and multivariate linear regression models.
+# Part II.B
+
+The second phase of this project is to better understand the relationships between the variables we started in Part I and need by running bivariate and multivariate linear regression models.
+
+<br>
 
 ## Data Preparation and Preliminary Tests
 
-In order to model infrastructure need, we needed variables that represented it. We selected the following variables to include in our models based on their association and correlation with need as well as their policy relevance:
+In order to model infrastructure need, we need variables that represent it. We will include the following variables in our models based on their association and correlation with need as well as their policy relevance:
 
 * MEDINC09
 * PCTWHITE10
@@ -872,17 +876,9 @@ In order to model infrastructure need, we needed variables that represented it. 
 * PRES_RES_REC_TRMT
 * PRES_RES_REC_COLLCTN
 
-
-
+<br>
 
 ### Create Variables to Represent Need
-
-To better understand Philadelphia's especially high infrastructure need, we created the following additional variables:
-
-* ResBurden
-* LogResBurden
-* LogPOP10
-* LogMEDINC09
 
 ```{r Calculate Residential Burden}
 cwns2012 <- cwns2012 %>% 
@@ -892,6 +888,14 @@ cwns2012 <- cwns2012 %>%
   mutate(LogMEDINC09 = ifelse(MEDINC09 > 0, log(MEDINC09), 0))
 ```
 
+To better understand Philadelphia's especially high infrastructure need, we created the following additional variables:
+
+* ResBurden
+* LogResBurden
+* LogPOP10
+* LogMEDINC09
+
+<br>
 
 **Residential Burden**
 
@@ -920,10 +924,12 @@ gglogresb <- cwns2012 %>%
 grid.arrange(ggresb, gglogresb, ncol = 2)
 
 ```
-We created a 'ResBurden' variable to understand if Philadelphia's high need could be driven by an overstretched system designed to serve more people than it currently does. We calculated residential burden as the ratio of total need to residential population served. If this variable were to be significant, its coefficient would tell us the expected increase (or decrease) in total need based on the ratio of need to residential pop served.
 
-The box plot of 'ResBurden' shows some significant outliers, but the value for most facilities is near zero. We then created a log transformed 'LogResBurden' variable to deal with its extreme skew and get a more normal distribution. This shows us a log transformed mean below zero, meaning that the average facility need in dollars is lower than the amount of residences it serves.
+We created a `ResBurden` variable to understand if Philadelphia's high need could be driven by an overstretched system designed to serve more people than it currently does. We calculated residential burden as the ratio of total need to residential population served. If this variable were to be significant, its coefficient would tell us the expected increase (or decrease) in total need based on the ratio of need to residential pop served.
 
+The box plot of `ResBurden` shows some significant outliers, but the value for most facilities is near zero. We then created a log transformed `LogResBurden` variable to deal with its extreme skew and get a more normal distribution. This shows us a log transformed mean below zero, meaning that the average facility need in dollars is lower than the amount of residences it serves.
+
+<br>
 
 **LogPOP10**
 
@@ -952,10 +958,12 @@ ggppop <- cwns2012%>%
 grid.arrange(ggppop, ggplogpop, ncol = 2)
 
 ```
-Because Philadelphia is one of the ten largest cities in the U.S. by population, 'POP10' is an important variable for our analysis. A large regression coefficient and high significance would indicate that increases in population have an important affect on the need of the facilities that serve them. Because our population data is also significantly skewed by large outliers, we log transformed it as well by creating a 'LogPOP10' variable.
 
-The box plot of 'LogPOP10'also shows some significant outliers, but the mean is well above zero. In fact, the mean population per facility in this data set is 304,727 which is notably lower than the 508,668 persons served by each of Philadelphia's three facilities.
+Because Philadelphia is one of the ten largest cities in the U.S. by population, `POP10` is an important variable for our analysis. A large regression coefficient and high significance would indicate that increases in population have an important affect on the need of the facilities that serve them. Because our population data is also significantly skewed by large outliers, we log transformed it as well by creating a `LogPOP10` variable.
 
+The box plot of `LogPOP10` also shows some significant outliers, but the mean is well above zero. In fact, the mean population per facility in this data set is 304,727 which is notably lower than the 508,668 persons served by each of Philadelphia's three facilities.
+
+<br>
 
 **LogMEDINC09**
 
@@ -985,10 +993,9 @@ grid.arrange(gginc, ggloginc, ncol = 2)
 
 ```
 
-Philadelphia is also one of the poorest large cities in the U.S. Therefore, income is an important variable to compare with need. A large and negative regression coefficient and high significance would indicate that increases in income have an important affect on need. Because our income data skews toward the top end of the distribution, we create a log transformed 'LogMEDINC09' variable to have a more normal distribution to include in our regression models.
+Philadelphia is also one of the poorest large cities in the U.S. Therefore, income is an important variable to compare with need. A large and negative regression coefficient and high significance would indicate that increases in income have an important affect on need. Because our income data skews toward the top end of the distribution, we create a log transformed `LogMEDINC09` variable to have a more normal distribution to include in our regression models.
 
-
-
+<br>
 
 ### Creating Binary "Dummy" Variables
 
@@ -1003,16 +1010,15 @@ cwns2012 <- cwns2012 %>%
 
 ```
 
-Suspecting that some factors influencing waste water infrastructure need in Philadelphia may be categorical rather than continuous, we created the three new binary dummy variables to include in our models. These are 'GrowingCity', 'lowincome', and 'lrgcity'.
+Suspecting that some factors influencing waste water infrastructure need in Philadelphia may be categorical rather than continuous, we created the three new binary dummy variables to include in our models. These are `GrowingCity`, `lowincome`, and `lrgcity`.
 
-'GrowingCity' is meant to reflect the particular case of Philadelphia, which has experienced significant population growth since 1980.
+`GrowingCity` is meant to reflect the particular case of Philadelphia, which has experienced significant population growth since 1980.
 
-Philadelphia is also a 'lrgcity', one of the 10 largest in the country, so we hypothesize being in this class of cities could also affect total need.
+Philadelphia is also a `lrgcity`, one of the 10 largest in the country, so we hypothesize being in this class of cities could also affect total need.
 
-Finally, 'lowincome' is also relevant to Philadelphia because it is a relatively low-income city, so we hypothesize this might relate to its high infrastructure need as well.
+Finally, `lowincome` is also relevant to Philadelphia because it is a relatively low-income city, so we hypothesize this might relate to its high infrastructure need as well.
 
-
-
+<br>
 
 ### One More Test: Multi-Colinearity
 
@@ -1042,7 +1048,7 @@ However, some of these variables might be too correlated with eachother or with 
 First, we examined the correlation coefficients between our candidate variables and total official need:
 
 
-```{r correlation matrix, fig.width=7, fig.height=5}
+```{r correlation matrix, fig.width=7, fig.height=5, fig.width=8}
 #make matrix of variables we're testing
 mod_vars <- cwns2012 %>% 
   dplyr::select(TOTAL_OFFICIAL_NEED, log_TOTAL_NEED, res_pop10_dens, res_pop_dens_chng_80_10,
@@ -1059,19 +1065,21 @@ corrplot(cormatrix, method = "circle", type = "lower", order = "hclust",
          tl.col = "black", tl.srt = 45)
 ```
 
+<br>
+
 Specifically, the following variables exhibited high degrees of significance with each other:  
 
-* res_pop10_dens & res_pop_dens_chng_80_10. We chose to use residential population density in 2010 moving forward because it has a higher correlation with total official need.
-* POP10 & LogPOP10 & lrgcity
-* PRES_RES_REC_COLLCTN & PRES_RES_REC_TRMT & proj_change_res_rec_collctn & proj_change_res_rec_trmt. We chose to move forward with projected change in residences receiving treatment because the corr. score is higher for treatment.
-* PRES_RES_REC_TRMT & ResBurden
-* MEDINC09 & LogMEDINC09 & LogPOP10
-* MEDINC09 & LogMEDINC09 & lowincome
+* `res_pop10_dens` & `res_pop_dens_chng_80_10`. We chose to use residential population density in 2010 moving forward because it has a higher correlation with total official need.
+* `POP10` & `LogPOP10` & `lrgcity`
+* `PRES_RES_REC_COLLCTN` & `PRES_RES_REC_TRMT` & `proj_change_res_rec_collctn` & `proj_change_res_rec_trmt`. We chose to move forward with projected change in residences receiving treatment because the corr. score is higher for treatment.
+* `PRES_RES_REC_TRMT` & `ResBurden`
+* `MEDINC09` & `LogMEDINC09` & `LogPOP10`
+* `MEDINC09` & `LogMEDINC09` & `lowincome`
 * Log of official need & log of residential burden, so we cannot use residential burden in our models.
 
 We then looked at all the correlation scores between each of our candidate variables and official need to help us select further:
 
-```{r correlations}
+```{r correlations, echo=FALSE}
 print('res_pop10_dens')
 cor(cwns2012$res_pop10_dens, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
 print('res_pop_dens_chng_80_10')
@@ -1106,155 +1114,179 @@ print('Low Income')
 cor(cwns2012$lowincome, cwns2012$TOTAL_OFFICIAL_NEED, use="complete.obs", method="pearson")
 ```
 
-We found that ResBurden has a correlation of 1 with Total Official Need, meaning Total Official Need is a function of ResBurden. Therefore, we exclude it from our regression analysis moving forward.
+We found that `ResBurden` has a correlation of 1 with Total Official Need, meaning Total Official Need is a function of `ResBurden`. Therefore, we exclude it from our regression analysis moving forward.
 
 Based on correlation with Total Official Need, and elimination of one of a variable pair when colinearity is present, favoring the one with higher correlation with need, we narrowed down this list of variables to 7 independent variables.
 
-Final variable list to test:
-* PRES_RES_REC_TRMT (cor with need = 0.53)
-* res_pop10_dens (cor with need = 0.42)
-* CSS (cor with need = 0.20)
-* LogPOP10 (cor with need = 0.18)
-* PCTWHITE10 (cor with need = -0.15)
-* LogMEDINC09 (cor with need = 0.05)
-* GrowingCity (cor with need = .04)
+Final variable list to test:  
 
-Second variable list to test:
-* PRES_RES_REC_TRMT (cor with need = 0.53)
-* res_pop10_dens (cor with need = 0.42)
-* CSS (cor with need = 0.20)
-* LogPOP10 (cor with need = 0.18)
-* PCTWHITE10 (cor with need = -0.15)
-* lowincome (cor with need = -0.05)
+* `PRES_RES_REC_TRMT` (cor with need = 0.53)
+* `res_pop10_dens` (cor with need = 0.42)
+* `CSS` (cor with need = 0.20)
+* `LogPOP10` (cor with need = 0.18)
+* `PCTWHITE10` (cor with need = -0.15)
+* `LogMEDINC09` (cor with need = 0.05)
+* `GrowingCity` (cor with need = .04)
 
-
-
+<br>
 
 ## Bivariate Regressions
 
-We then ran bivariate regressions to further clarify the relationships between 'TOTAL_OFFICIAL_NEED' and each of the variables considered above.
+We then ran bivariate regressions to further clarify the relationships between `TOTAL_OFFICIAL_NEED` and each of the variables considered above.
 
-
+Notably, plotting the residuals of these regressions shows a significant amount of heteroscedasticity in our variables. This suggests that these variables may bias our models toward less accurate predictions for high values of need.
 
 ```{r Scatter Plot 1}
-ggplot(cwns2012, aes(x=log(PRES_RES_REC_TRMT), y=log(TOTAL_OFFICIAL_NEED))) + 
-  ggtitle("Present Residential Receiving Treatment by Official Need") +
-  xlab("Present Residential Receiving Treatment (Log-Adjusted)") + ylab("Official Need (Log-Adjusted)") +
-  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5)+
-  geom_smooth(method=lm, color="#0059c7") +
+bimod1 <- lm(TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT, data = cwns2012)
+
+bimod1_resid <- augment(bimod1)
+
+ggplot(bimod1_resid, aes(x = .fitted, y = .resid)) + 
+  ggtitle("Present Residential Receiving Treatment Regressed on Need") +
+  xlab("Fitted") + ylab("Residuals") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "#a02300") + 
   theme_bw()
 ```
 
-**Need vs PRES_RES_REC_TRMT** appears to be significant and its coefficient suggests a one unit increase residences recieving treatment leads to a $670 increase in need.
 ```{r bivariate regression 1}
-bimod1 <- lm(TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT, data = cwns2012)
 summary(bimod1)
 ```
+**Need vs PRES_RES_REC_TRMT** appears to be significant and its coefficient suggests a 1 unit increase in residential pop receiving treatment leads to a $670 increase in need.
+
 
 ```{r Scatter Plot 2}
-ggplot(cwns2012, aes(x=log(res_pop10_dens), y=log(TOTAL_OFFICIAL_NEED))) + 
-  ggtitle("Residential Population Density by Official Need") +
-  xlab("2010 Residential Population Density (Log-Adjusted)") + ylab("Official Need (Log-Adjusted)") +
-  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5)+
-  geom_smooth(method=lm, color="#0059c7") +
+bimod2 <- lm(TOTAL_OFFICIAL_NEED ~ res_pop10_dens, data = cwns2012)
+
+bimod2_resid <- augment(bimod2)
+
+ggplot(bimod2_resid, aes(x = .fitted, y = .resid)) + 
+  ggtitle("Residential Pop Density Regressed on Need") +
+  xlab("Fitted") + ylab("Residuals") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "#a02300") + 
   theme_bw()
 ```
 
-**Need vs. res_pop10_dens** also appears to be significant and to have a larger effect, per unit increase, on need.
 ```{r bivariate regression 2}
-bimod2 <- lm(TOTAL_OFFICIAL_NEED ~ res_pop10_dens, data = cwns2012)
 summary(bimod2)
 ```
+**Need vs. res_pop10_dens** also appears to be significant and to result in a $106,509, per unit increase, in need.
+
 ```{r Scatter Plot 3}
-ggplot(cwns2012, aes(x=CSS, y=log(TOTAL_OFFICIAL_NEED))) + 
-  ggtitle("Combined Sewer System by Official Need") +
-  xlab("Combined Sewer System (CSS)") + ylab("Official Need (Log-Adjusted)") +
-  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5)+
-  geom_smooth(method=lm, color="#0059c7") +
+bimod3 <- lm(TOTAL_OFFICIAL_NEED ~ CSS, data = cwns2012)
+
+bimod3_resid <- augment(bimod3)
+
+ggplot(bimod3_resid, aes(x = .fitted, y = .resid)) + 
+  ggtitle("Combined Sewer System Regressed on Need") +
+  xlab("Fitted") + ylab("Residuals") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "#a02300") + 
   theme_bw()
 ```
 
-Not understanding why but the presence of **CSS** is associated with higher need, based on the intercept, and is statistically significant. However, this it is consistent with our earlier findings.
 ```{r bivariate regression 3}
-bimod3 <- lm(TOTAL_OFFICIAL_NEED ~ CSS, data = cwns2012)
 summary(bimod3)
 ```
+The intercept indicates that when **CSS** is present and all other variables are constant, we can expect a $99,668,737 average increase in need than when there is no CSS (meaning there is MS4).
+
+
 ```{r Scatter Plot 4}
-ggplot(cwns2012, aes(x=LogPOP10, y=log(TOTAL_OFFICIAL_NEED))) + 
-  ggtitle("Population 2010 by Official Need") +
-  xlab("2010 Population (Log-Adjusted)") + ylab("Official Need (Log-Adjusted)") +
-  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5)+
-  geom_smooth(method=lm, color="#0059c7") +
+bimod4 <- lm(TOTAL_OFFICIAL_NEED ~ LogPOP10, data = cwns2012)
+
+bimod4_resid <- augment(bimod4)
+
+ggplot(bimod4_resid, aes(x = .fitted, y = .resid)) + 
+  ggtitle("Log of Population 2010 Regressed on Need") +
+  xlab("Fitted") + ylab("Residuals") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "#a02300") + 
   theme_bw()
 ```
 
-**Need vs. LogPOP10** also appears to be significant and to have a large effect, per unit increase, on need.
 ```{r bivariate regression 4}
-bimod4 <- lm(TOTAL_OFFICIAL_NEED ~ LogPOP10, data = cwns2012)
 summary(bimod4)
 ```
+**Need vs. LogPOP10** also appears to be significant. For a 1 unit increase in this variable, we could expect a $15,565,206 increase (not log adjusted) in need.
+
+
 ```{r Scatter Plot 5}
-ggplot(cwns2012, aes(x=log(PCTWHITE10), y=log(TOTAL_OFFICIAL_NEED))) + 
-  ggtitle("Percent White 2010 by Official Need") +
-  xlab("2010 Percent White (Log-Adjusted)") + ylab("Official Need (Log-Adjusted)") +
-  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5)+
-  geom_smooth(method=lm, color="#0059c7") +
+bimod5 <- lm(TOTAL_OFFICIAL_NEED ~ PCTWHITE10, data = cwns2012)
+
+bimod5_resid <- augment(bimod5)
+
+ggplot(bimod5_resid, aes(x = .fitted, y = .resid)) + 
+  ggtitle("Percent White 2010 Regressed on Need") +
+  xlab("Fitted") + ylab("Residuals") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "#a02300") + 
   theme_bw()
 ```
 
-**PCTWHITE10 vs. Need** shows us there is a large negative relationship between a 1% increase in white population and need.
 ```{r bivariate regression 5}
-bimod5 <- lm(TOTAL_OFFICIAL_NEED ~ PCTWHITE10, data = cwns2012)
 summary(bimod5)
 ```
+**PCTWHITE10 vs. Need** suggests that for each 1% increase in white population, we can expect a -$1,329,320 reduction in need (careful about causation vs. correlation!)
+
 
 ```{r Scatter Plot 6}
-ggplot(cwns2012, aes(x=LogMEDINC09, y=log(TOTAL_OFFICIAL_NEED))) + 
-  ggtitle("Median Income 2009 by Official Need") +
-  xlab("2009 Median Income (Log-Adjusted)") + ylab("Official Need (Log-Adjusted)") +
-  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5)+
-  geom_smooth(method=lm, color="#0059c7") +
+bimod6 <- lm(TOTAL_OFFICIAL_NEED ~ LogMEDINC09, data = cwns2012)
+
+bimod6_resid <- augment(bimod6)
+
+ggplot(bimod6_resid, aes(x = .fitted, y = .resid)) + 
+  ggtitle("Median Income 2009 Regressed on Need") +
+  xlab("Fitted") + ylab("Residuals") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "#a02300") + 
   theme_bw()
 ```
 
-**LogMEDINC09 vs. need** shows this variable to also be significant and also be associated with a large increase in need per unit increase in log adjusted income.
 ```{r bivariate regression 6}
-bimod6 <- lm(TOTAL_OFFICIAL_NEED ~ LogMEDINC09, data = cwns2012)
 summary(bimod6)
 ```
+**LogMEDINC09 vs. need** shows this variable to also be significant and also be associated with a large increase in need per unit increase in log adjusted income.
+
 
 ```{r Scatter Plot 7}
-ggplot(cwns2012, aes(x=GrowingCity, y=log(TOTAL_OFFICIAL_NEED))) + 
-  ggtitle("Growing City by Official Need") +
-  xlab("Growing City") + ylab("Official Need (Log-Adjusted)") +
-  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5)+
-  geom_smooth(method=lm, color="#0059c7") +
+bimod7 <- lm(TOTAL_OFFICIAL_NEED ~ GrowingCity, data = cwns2012)
+
+bimod7_resid <- augment(bimod7)
+
+ggplot(bimod7_resid, aes(x = .fitted, y = .resid)) + 
+  ggtitle("Growing City Regressed on Need") +
+  xlab("Fitted") + ylab("Residuals") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "#a02300") + 
   theme_bw()
 ```
 
-**GrowingCity vs. need** shows that this variable is also significant and growing cities are associated with higher need (based on the intercept).
 ```{r bivariate regression 7}
-bimod7 <- lm(TOTAL_OFFICIAL_NEED ~ GrowingCity, data = cwns2012)
 summary(bimod7)
 ```
+**GrowingCity vs. need** shows that this variable is also significant and location in a growing city could be associated with an average increase of $12,760,382 in need.
+
 
 ```{r Scatter Plot 8}
-ggplot(cwns2012, aes(x=lowincome, y=log(TOTAL_OFFICIAL_NEED))) + 
-  ggtitle("Low Income City by Official Need") +
-  xlab("Low Income") + ylab("Official Need (Log-Adjusted)") +
-  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5)+
-  geom_smooth(method=lm, color="#0059c7") +
+bimod8 <- lm(TOTAL_OFFICIAL_NEED ~ lowincome, data = cwns2012)
+
+bimod8_resid <- augment(bimod8)
+
+ggplot(bimod8_resid, aes(x = .fitted, y = .resid)) + 
+  ggtitle("Low Income City Regressed on Need") +
+  xlab("Fitted") + ylab("Residuals") +
+  geom_point(size=1, color="black", fill="#6496b4", shape=21, alpha=.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "#a02300") + 
   theme_bw()
 ```
 
-**lowincome vs. need** shows that this variable is also significant and low-income cities are associated with higher need (based on the intercept).
 ```{r bivariate regression 8}
-bimod8 <- lm(TOTAL_OFFICIAL_NEED ~ lowincome, data = cwns2012)
 summary(bimod8)
 ```
+**lowincome vs. need** shows that this variable is also significant and low-income cities are actually associated with an average $13,390,627 lower need than other cities.
 
-
-
+<br>
 
 ## Multivariate Regression
 
@@ -1264,13 +1296,13 @@ Finally, we run a series of multivariate regressions to measure the degree to wh
 
 For our first model, we begin with a selection of all our hypothesized significant variables that do not exhibit multi-collinearity according to our correlation tests:
 
-* PRES_RES_REC_TRMT (cor with need = 0.53)
-* res_pop10_dens (cor with need = 0.42)
-* CSS (cor with need = 0.20)
-* LogPOP10 (cor with need = 0.18)
-* PCTWHITE10 (cor with need = -0.15)
-* LogMEDINC09 (cor with need = 0.05)
-* GrowingCity (cor with need = .04)
+* `PRES_RES_REC_TRMT` (cor with need = 0.53)
+* `res_pop10_dens` (cor with need = 0.42)
+* `CSS` (cor with need = 0.20)
+* `LogPOP10` (cor with need = 0.18)
+* `PCTWHITE10` (cor with need = -0.15)
+* `LogMEDINC09` (cor with need = 0.05)
+* `GrowingCity` (cor with need = .04)
 
 ```{r multivariate regresssion model 1}
 #Interpreting regression results - key statistics:
@@ -1302,10 +1334,9 @@ summary(mod1)
 
 ```
 **Interpreting the Results of Model 1**
-The R-squared and adjusted R-squared tell us this first model describes ~37% of the variance in our data. There is room for improvement, but we are capturing some significant relationships. The p-value associated with the model's F-statistic is low, which tells us the model describes the data better than the mean. Every variable tested appears to be significant except for 'PCTWHITE10'. Therefore, Model 1 could perform better, but seems like a promising start.
+The R-squared and adjusted R-squared tell us this first model describes ~37% of the variance in our data. There is room for improvement, but we are capturing some significant relationships. The p-value associated with the model's F-statistic is low, which tells us the model describes the data better than the mean. Every variable tested appears to be significant except for `PCTWHITE10`. Therefore, Model 1 could perform better, but seems like a promising start.
 
-
-
+<br>
 
 ### Model 2
 
@@ -1319,20 +1350,19 @@ Next, we employ automated backwards selection on model 1 to see which, if any va
   # the preferred model has the lowest AIC. And AIC increases with the number of explanatory variables.
 mod2 <- step(mod1, direction = "backward")
 ```
-The results of automated backwards selection tell us we can drop 'PCTWHITE10' because the AIC is lower for the model when it is not included, showing that a model without PCTWHITE10 has a better fit with the data. This gives us 'mod2'.
+The results of automated backwards selection tell us we can drop `PCTWHITE10` because the AIC is lower for the model when it is not included, showing that a model without `PCTWHITE10` has a better fit with the data. This gives us `mod2`.
 
 ```{r mod 2 anova}
 anova(mod1, mod2)
 ```
-Comparing 'mod1' and 'mod2' with an analysis of Variance Table gives a p-value much larger than the 0.05 threshold for statistically significant difference between the model's means. Therefore, while 'mod2''s AIC suggests it performs slightly better, running ANOVA suggests the models don't perform differently from eachother in a meaningful way.
+Comparing `mod1` and `mod2` with an analysis of Variance Table gives a p-value much larger than the 0.05 threshold for statistically significant difference between the model's means. Therefore, while `mod2`'s AIC suggests it performs slightly better, running ANOVA suggests the models don't perform differently from eachother in a meaningful way.
 
 ```{r mod 2 summary}
 summary(mod2)
 ```
-Looking at 'mod2''s r-squared values, we see they are in fact the same as 'mod1'. This means at the very least it is not worth keeping PCTWHITE10 in the model.
+Looking at `mod2`'s r-squared values, we see they are in fact the same as `mod1`. This means at the very least it is not worth keeping PCTWHITE10 in the model.
 
-
-
+<br>  
 
 ### Model 3
 
@@ -1342,6 +1372,8 @@ What if we replace median income with our binary low income variable?
 mod3 <- lm (TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT + res_pop10_dens + CSS + LogPOP10 + lowincome + GrowingCity, data = cwns2012)
 summary(mod3)
 ```
+<br>  
+
 The r-squared got slightly worse. What does automated backward selection tell us?
 
 ```{r mod 3 back step}
@@ -1352,36 +1384,33 @@ The r-squared got slightly worse. What does automated backward selection tell us
   # the preferred model has the lowest AIC. And AIC increases with the number of explanatory variables.
 step(mod3, direction = "backward")
 ```
-Backward selection tells us the model's fit is better with low income included than without. But, since 'lowincome' and 'LogMEDINC09' can't be in the same model and the r-squared was higher for the model with 'LogMEDINC09' we choose to move forward with the original income variable rather than the low income dummy variable.
+Backward selection tells us the model's fit is better with low income included than without. But, since `lowincome` and `LogMEDINC09` can't be in the same model and the r-squared was higher for the model with `LogMEDINC09` we choose to move forward with the original income variable rather than the low income dummy variable.
 
-
-
+<br>  
 
 ### Model 4
 
 What if we try interacting terms from model 2 instead?
 
 ```{r mod 4}
-mod4 <- lm (TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT + res_pop10_dens:CSS + LogPOP10 + LogMEDINC09 + GrowingCity,
+mod4 <- lm (TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT + CSS + res_pop10_dens:CSS + LogPOP10 + LogMEDINC09 + GrowingCity,
             data = cwns2012)
 summary(mod4)
 ```
-Interacting 'res_pop10_dens' with 'css' improves the fit, but a number of variables lose their significance. What happens if we drop all non-significant terms? In this case, 'LogPOP10', 'LogMEDINC09', and 'GrowingCity'.
+Interacting `res_pop10_dens` with `css` improves the fit, but two variables lose their significance. What happens if we drop all non-significant terms? In this case, `LogPOP10` and `LogMEDINC09`.
 
-
-
+<br>  
 
 ### Model 5
 
 ```{r mod5}
-mod5 <- lm (TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT + CSS + res_pop10_dens:CSS,
+mod5 <- lm (TOTAL_OFFICIAL_NEED ~ PRES_RES_REC_TRMT + CSS + res_pop10_dens:CSS + GrowingCity,
             data = cwns2012)
 summary(mod5)
 ```
-Dropping these three variables only reduces the r-squared of 'mod5' by 0.0005 and the adjusted r-squared by 0.0003. Also, the p-values associated with the f-statistic of the two models also stays the same, therefore, 'mod5' is a leaner and almost as mean model as 'mod4' that performs effectively just as well but doesn't carry the weight of insignificant variables.
+Dropping these two variables only reduces the r-squared of `mod5` by 0.0002 and the adjusted r-squared by 0.0001. Also, the p-values associated with the f-statistic of the two models stay the same as well. Therefore, `mod5` is a leaner and essentially as mean model as `mod4` that performs just as well but doesn't carry the weight of insignificant variables.
 
-
-
+<br>
 
 ### Model Selection
 
@@ -1405,16 +1434,18 @@ Finally, we check the VIF for Model 5 to ensure we have not selected a final mod
 
 ### Final Model: Model 5
 
-After examining the relationship between total budgeted facility need and what feels like countless variables for this assignment, it seems surprising that just three variables describe variation in need better than any other combination we tested. However, when we think about which variables they are and the fact that the data is national, the results of our process make more sense.
+After examining the relationship between total budgeted facility need and what feels like countless variables for this assignment, it seems surprising that just four variables describe variation in need better than any other combination we tested. However, when we think about which variables they are and the fact that the data is national, the results of our process make more sense.
 
-The process in question, in which we went from a total of 48 potentially significant independent variables down to 7 to run multivariate regressions on, and eventually down to the 3 most significant, revealed that present residential population receiving treatment, residential population density, and presence of a combined sewer system are key drivers of wastewater facility budgetary need in the United States.
+The process in question, in which we went from a total of 48 potentially significant independent variables down to 7 to run multivariate regressions on, and eventually down to the 4 most significant, revealed that present residential population receiving treatment, residential population density, being a growing city, and presence of a combined sewer system are key drivers of wastewater facility budgetary need in the United States.
 
 Independent Vars.  | Estimate    | Std. Error | t value | Pr(>|t|)   
 ------------------ | ----------- | ---------- | ------- | ---------------------
-(Intercept)        | 2,966,000  | 1211000    |   2.449 |  0.0144 
-PRES_RES_REC_TRMT  | $560        | 11.1       | 50.460  | < 0.00000000000000002
-CSS                | $23,550,000 | 4344000    | 5.421   | 0.0000000608
-CSS:res_pop10_dens | 91,830      | 2566       | 35.786  | < 0.00000000000000002
+(Intercept)        | -1,985,000  | 2.225e+06  | -0.892  |  0.37238  
+PRES_RES_REC_TRMT  | $558        | 11.1       | 50.177  | < 0.00000000000000002
+CSS                | $25,060,000 | 4380000    | 5.722   | 0.0000000109
+CSS:res_pop10_dens | 91,680      | 2566       | 35.729  | < 0.00000000000000002
+GrowingCity        | $6,801,000  | 2564000    | 2.652   | 0.00801
+
 
 Specifically, the coefficients of our final model (shown in the table above) predict that:
 
@@ -1424,13 +1455,15 @@ Specifically, the coefficients of our final model (shown in the table above) pre
 
 * Because CSS is a binary dummy variable, we interpret its standalone coefficient differently. It tells us that **the average increase in need for facilities with a CSS instead of MS4 is a shocking $23,550,000.**
 
-* *It is also important to recognize that the effect of CSS on the model is shaped by its interaction with residential population density. In this model, when combined sewers are not present (CSS = 0) the slope of the regression line equals the coefficient for 'PRES_RES_REC_TRMT'.*
+* *It is also important to recognize that the effect of CSS on the model is shaped by its interaction with residential population density. In this model, when combined sewers are not present (CSS = 0) the slope of the regression line equals the coefficient for* `PRES_RES_REC_TRMT`.
+
+* Finally, **the average increase in need for growing cities is also quite high at $6,801,000.**
 
 
-**Overall Model**
-The r-squared value of this model is 0.3915, which means that the predictor variables explain about 39% of the variability in the response variable (TOTAL_OFFICIAL_NEED).
+**Overall Model**  
+The r-squared value of this model is **0.392**, which means that the predictor variables explain about 39% of the variability in the response variable `TOTAL_OFFICIAL_NEED`.
 
-```{r plot residuals mod 5, fig.width=7}
+```{r plot residuals mod 5, fig.width=9}
 #fitted values are predicted values (in this case, need)
 
 mod5_resid <- augment(mod5)
@@ -1457,11 +1490,14 @@ gg5rescut <- ggplot(mod5_resid, aes(x = .fitted, y = .resid)) +
 grid.arrange(gg5resfull, gg5rescut, ncol = 2)
 
 ```
+
 Plotting the residuals against the predicted or "fitted" values of our final model reveals a clustering around lower values, or heteroscedasticity. Plotting the residuals of an ideal model would show homoscedasticity - a random yet equal distribution around the regression line. The heteroscedasticity in our model means it predicts better (is more accurate) at low values of need than at high ones.
 
 The above plots show mean facility need in the United States with a vertical yellow line and mean facility need for Philadelphia with a red line. The plot on the left includes the full range of data and shows that unfortunately the model does not predict very accurately when need is in the range of Philadelphia's. However, the zoomed in plot on the right shows that the residuals are much more symmetric around the regression line for values closer to mean U.S. facility need. This suggests that our model is useful for estimating need in cities with average need.
 
->In summary, the results of this model are of significance to cities with large large numbers of present residences receiving treatment, combined sewers, and higher than average population density. Philly fits all of these descriptors. The city's population density and residences receiving treatment are projected to increase, and it has a CSS. This makes clear that Philly's need for water infrastructure investment, while currently quite high, will only continue to increase in the future. Therefore, investment in this infrastructure is an absolute MUST!
+<br>
+
+>In summary, the results of this model are of significance to cities that have large numbers of present residences receiving treatment, combined sewers, higher than average population density, and are growing. Philly fits all of these descriptors. The city's population density and residences receiving treatment are projected to increase, it has a CSS, and the city appears to still be growing. This makes clear that Philly's need for water infrastructure investment, while currently quite high, will only continue to increase in the future. Therefore, investment in this infrastructure is an absolute MUST!
 
 
 
